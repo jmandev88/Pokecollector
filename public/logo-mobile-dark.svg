@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 80">
+  <style>
+    .text-main { 
+      fill: #fff; 
+      font-family: 'Poppins', sans-serif; 
+      font-weight: 700; 
+      text-anchor: middle;
+    }
+    .accent { fill: #e30613; }
+  </style>
+
+  <!-- MCC -->
+  <text x="90" y="55" font-size="70" class="text-main">MCC</text>
+
+  <!-- Red underline -->
+  <rect 
+    x="10" 
+    y="65" 
+    width="160" 
+    height="6" 
+    rx="3" 
+    class="accent" 
+  />
+</svg>
