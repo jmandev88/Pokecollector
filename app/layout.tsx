@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import AuthProvider from "./components/AuthProvider";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body
         className={`${geistSans.variable} ${plusJakarta.variable}  ${geistMono.variable} antialiased bg-white dark:bg-gray-800`} style={{ margin: '0', fontFamily: 'Arial, Helvetica, sans-serif' }}
       > 
-          {children}
+          <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
