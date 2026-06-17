@@ -1,13 +1,13 @@
 import { db } from "../neon";
 import { normalizeLanguage } from "@/app/utils/language";
 
-export async function fetchSet(lang: string) {
+export async function fetchSealed(lang: string) {
   const safeLang = normalizeLanguage(lang);
   const result = await db.query(
     `
     SELECT *
-    FROM mcc_sets
-    WHERE set_language_code = $1
+    FROM mcc_sealed
+    WHERE language_code = $1
     `,
     [safeLang.toUpperCase()]
   );
@@ -15,14 +15,14 @@ export async function fetchSet(lang: string) {
   return result.rows || null;
 }
 
-export async function fetchSetCount(lang: string) {
+export async function fetchSealedCount(lang: string) {
   const safeLang = normalizeLanguage(lang);
 
   const result = await db.query(
     `
     SELECT COUNT(*) AS count
-    FROM mcc_sets
-    WHERE set_language_code = $1
+    FROM mcc_sealed
+    WHERE language_code = $1
     `,
     [safeLang.toUpperCase()]
   );

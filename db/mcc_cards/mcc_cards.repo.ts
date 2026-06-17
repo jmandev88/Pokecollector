@@ -14,3 +14,18 @@ export async function fetchCards(lang: string, setid: string) {
 
   return result.rows || null;
 }
+
+export async function fetchCardCount(lang: string) {
+  const safeLang = normalizeLanguage(lang);
+
+  const result = await db.query(
+    `
+    SELECT COUNT(*) AS count
+    FROM mcc_cards
+    WHERE language_code = $1
+    `,
+    [safeLang.toUpperCase()]
+  );
+
+  return result.rows[0]?.count ?? 0;
+}
