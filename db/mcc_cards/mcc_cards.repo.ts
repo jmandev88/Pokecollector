@@ -15,7 +15,7 @@ export async function fetchCardsByExpansion(lang: string, setid: string) {
   return result.rows || null;
 }
 
-export async function fetchCardsByRarity(lang: string, setid: string) {
+export async function fetchCardsByRarity(lang: string, rarity: string) {
   const safeLang = normalizeLanguage(lang);
   const result = await db.query(
     `
@@ -23,7 +23,7 @@ export async function fetchCardsByRarity(lang: string, setid: string) {
     FROM mcc_cards
     WHERE language_code = $1 AND rarity = $2
     `,
-    [safeLang.toUpperCase(), setid]
+    [safeLang.toUpperCase(), decodeURIComponent(rarity)]
   );
 
   return result.rows || null;
@@ -57,7 +57,7 @@ export async function fetchCardsByType(lang: string, type: string) {
     `,
     [
       safeLang.toUpperCase(),
-      JSON.stringify([type]),
+      JSON.stringify([decodeURIComponent(type)]),
     ]
   );
   return result.rows || null;
