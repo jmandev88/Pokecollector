@@ -1,11 +1,11 @@
 import Header from "@/app/components/layout/Header/Header";
-import { fetchCardsByExpansion } from "@/db/mcc_cards/mcc_cards.repo";
+import { fetchCardsByType } from "@/db/mcc_cards/mcc_cards.repo";
 import Image from "next/image";
 import Link from "next/link";
 
-export default async function Sets({params,}: {params: Promise<{ lang: string, setid: string }>}) {
-  const { lang, setid } = await params
-  const cards = await fetchCardsByExpansion(lang, setid);
+export default async function Pokedex({params,}: {params: Promise<{ lang: string, type: string }>}) {
+  const { lang, type } = await params
+  const cards = await fetchCardsByType(lang, type);
   
   return (
     <div className="min-h-screen min-w-full bg-gray-800 text-white">

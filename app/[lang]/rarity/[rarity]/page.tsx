@@ -1,11 +1,11 @@
 import Header from "@/app/components/layout/Header/Header";
-import { fetchCardsByExpansion } from "@/db/mcc_cards/mcc_cards.repo";
+import { fetchCardsByRarity } from "@/db/mcc_cards/mcc_cards.repo";
 import Image from "next/image";
 import Link from "next/link";
 
-export default async function Sets({params,}: {params: Promise<{ lang: string, setid: string }>}) {
-  const { lang, setid } = await params
-  const cards = await fetchCardsByExpansion(lang, setid);
+export default async function Rarity({params,}: {params: Promise<{ lang: string, rarity: string }>}) {
+  const { lang, rarity } = await params
+  const cards = await fetchCardsByRarity(lang, rarity);
   
   return (
     <div className="min-h-screen min-w-full bg-gray-800 text-white">
@@ -26,7 +26,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string, s
                     />
               </div>
             )) : (
-              <p>No cards found for this language and set.</p>
+              <p>No cards found for this language and rarity.</p>
             )}
           </div>
       </div>

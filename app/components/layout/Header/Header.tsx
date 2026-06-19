@@ -12,6 +12,7 @@ const LANGUAGES = ["en", "ja"] as const;
 export default function Header({ lang }: { lang: string }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  console.log(session)
 
   return (
     <header className="bg-gray-800 shadow border-b border-b-white px-4 py-2">

@@ -6,7 +6,7 @@ const API_KEY = 'c1209faf6f2d409b59cd4d87e1ce76216926ba53bef3ea4056664846ccd5d21
 const TEAM_ID = 'mcc';
 
 const SET_IDS = [
-  // "adv1_ja"
+  "adv1_ja",
 "adv2_ja",
 "adv3_ja",
 "adv4_ja",
@@ -485,16 +485,43 @@ async function upsertCard(card) {
       types,
       hp,
       evolves_from,
+
       rarity,
       rarity_code,
+
       number,
+      printed_number,
+
+      artist,
+
       expansion_id,
+
       language,
       language_code,
+
+      regulation_mark,
+
+      converted_retreat_cost,
+      expansion_sort_order,
+
       abilities,
       attacks,
+
+      weaknesses,
+      resistances,
+
+      retreat_cost,
+
+      rules,
+
+      legalities,
+
+      national_pokedex_numbers,
+
       images,
       expansion,
+      variants,
+
       translations
     )
     VALUES (
@@ -504,42 +531,101 @@ async function upsertCard(card) {
 
       ${safeJson(card.subtypes, [])}::jsonb,
       ${safeJson(card.types, [])}::jsonb,
+
       ${card.hp ?? null},
 
       ${safeJson(card.evolves_from, [])}::jsonb,
 
-      ${card.rarity},
-      ${card.rarity_code},
-      ${card.number},
+      ${card.rarity ?? null},
+      ${card.rarity_code ?? null},
+
+      ${card.number ?? null},
+      ${card.printed_number ?? null},
+
+      ${card.artist ?? null},
+
       ${card.expansion?.id ?? null},
-      ${card.language},
-      ${card.language_code},
+
+      ${card.language ?? null},
+      ${card.language_code ?? null},
+
+      ${card.regulation_mark ?? null},
+
+      ${card.converted_retreat_cost ?? null},
+      ${card.expansion_sort_order ?? null},
 
       ${safeJson(card.abilities, [])}::jsonb,
       ${safeJson(card.attacks, [])}::jsonb,
+
+      ${safeJson(card.weaknesses, [])}::jsonb,
+      ${safeJson(card.resistances, [])}::jsonb,
+
+      ${safeJson(card.retreat_cost, [])}::jsonb,
+
+      ${safeJson(card.rules, [])}::jsonb,
+
+      ${safeJson(card.legalities, [])}::jsonb,
+
+      ${safeJson(card.national_pokedex_numbers, [])}::jsonb,
+
       ${safeJson(card.images, [])}::jsonb,
 
       ${safeJson(card.expansion, {})}::jsonb,
-      ${safeJson(card.translation, {})}::jsonb
+
+      ${safeJson(card.variants, [])}::jsonb,
+
+      ${safeJson(card.translations, {})}::jsonb
     )
     ON CONFLICT (id)
     DO UPDATE SET
       name = EXCLUDED.name,
       supertype = EXCLUDED.supertype,
+
       subtypes = EXCLUDED.subtypes,
       types = EXCLUDED.types,
+
       hp = EXCLUDED.hp,
+
       evolves_from = EXCLUDED.evolves_from,
+
       rarity = EXCLUDED.rarity,
       rarity_code = EXCLUDED.rarity_code,
+
       number = EXCLUDED.number,
+      printed_number = EXCLUDED.printed_number,
+
+      artist = EXCLUDED.artist,
+
       expansion_id = EXCLUDED.expansion_id,
+
       language = EXCLUDED.language,
       language_code = EXCLUDED.language_code,
+
+      regulation_mark = EXCLUDED.regulation_mark,
+
+      converted_retreat_cost = EXCLUDED.converted_retreat_cost,
+      expansion_sort_order = EXCLUDED.expansion_sort_order,
+
       abilities = EXCLUDED.abilities,
       attacks = EXCLUDED.attacks,
+
+      weaknesses = EXCLUDED.weaknesses,
+      resistances = EXCLUDED.resistances,
+
+      retreat_cost = EXCLUDED.retreat_cost,
+
+      rules = EXCLUDED.rules,
+
+      legalities = EXCLUDED.legalities,
+
+      national_pokedex_numbers = EXCLUDED.national_pokedex_numbers,
+
       images = EXCLUDED.images,
+
       expansion = EXCLUDED.expansion,
+
+      variants = EXCLUDED.variants,
+
       translations = EXCLUDED.translations;
   `;
 }
@@ -554,18 +640,21 @@ async function upsertVariants(card) {
     await sql`
       INSERT INTO mcc_card_variants (
         card_id,
+        set_id,
         name,
         prices,
         pop_reports
       )
       VALUES (
         ${card.id},
+        ${card.expansion?.id ?? null},
         ${variant.name},
         ${safeJson(variant.prices, [])}::jsonb,
         ${safeJson(variant.pop_reports, [])}::jsonb
       )
       ON CONFLICT (card_id, name)
       DO UPDATE SET
+        set_id = EXCLUDED.set_id,
         prices = EXCLUDED.prices,
         pop_reports = EXCLUDED.pop_reports;
     `;

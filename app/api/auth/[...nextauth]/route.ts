@@ -17,10 +17,10 @@ const handler = NextAuth({
     async signIn({ user }) {
       if (!user.email) return false;
 
-      const existing = await fetchUserByEmail(user.email);
+      let existing = await fetchUserByEmail(user.email);
 
       if (!existing) {
-        await createUser({
+        existing = await createUser({
           email: user.email,
           name: user.name ?? "",
           image: user.image ?? "",
@@ -28,6 +28,26 @@ const handler = NextAuth({
       }
 
       return true;
+    },
+
+    async jwt({ token, user }) {
+      if (token.email) {
+        const dbUser = await fetchUserByEmail(token.email);
+
+        if (dbUser) {
+          token.userId = dbUser.id;
+        }
+      }
+
+      return token;
+    },
+
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.userId as string;
+      }
+
+      return session;
     },
   },
 });
