@@ -8,7 +8,7 @@ type CardTileProps = {
     id: string;
     name: string;
     variant_name: string;
-    rarity_code: string;
+    rarity: string;
     images?: {
       type: string;
       medium: string;
