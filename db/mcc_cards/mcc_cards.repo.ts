@@ -1,13 +1,30 @@
 import { db } from "../neon";
 import { normalizeLanguage } from "@/app/utils/language";
 
+const CARD_SELECT = `
+  SELECT
+    c.*,
+
+    v.id AS variant_id,
+    v.card_id AS variant_card_id,
+    v.name AS variant_name,
+    v.prices AS variant_prices,
+    v.pop_reports AS variant_pop_reports,
+    v.language_code AS variant_language_code
+
+  FROM mcc_cards c
+  LEFT JOIN mcc_card_variants v
+    ON v.card_id = c.id
+`;
+
 export async function fetchCardsByExpansion(lang: string, setid: string) {
   const safeLang = normalizeLanguage(lang);
+
   const result = await db.query(
     `
-    SELECT *
-    FROM mcc_cards
-    WHERE language_code = $1 AND expansion_id = $2
+    ${CARD_SELECT}
+    WHERE c.language_code = $1
+      AND c.expansion_id = $2
     `,
     [safeLang.toUpperCase(), setid]
   );
@@ -17,11 +34,12 @@ export async function fetchCardsByExpansion(lang: string, setid: string) {
 
 export async function fetchCardsByRarity(lang: string, rarity: string) {
   const safeLang = normalizeLanguage(lang);
+
   const result = await db.query(
     `
-    SELECT *
-    FROM mcc_cards
-    WHERE language_code = $1 AND rarity = $2
+    ${CARD_SELECT}
+    WHERE c.language_code = $1
+      AND c.rarity = $2
     `,
     [safeLang.toUpperCase(), decodeURIComponent(rarity)]
   );
@@ -29,37 +47,39 @@ export async function fetchCardsByRarity(lang: string, rarity: string) {
   return result.rows || null;
 }
 
-export async function fetchCardsByPokedexNumber( lang: string, pokedexNumber: number) {
+export async function fetchCardsByPokedexNumber(lang: string, pokedexNumber: number) {
   const safeLang = normalizeLanguage(lang);
+
   const result = await db.query(
     `
-    SELECT *
-    FROM mcc_cards
-    WHERE language_code = $1
-      AND national_pokedex_numbers @> $2::jsonb
+    ${CARD_SELECT}
+    WHERE c.language_code = $1
+      AND c.national_pokedex_numbers @> $2::jsonb
     `,
     [
       safeLang.toUpperCase(),
       JSON.stringify([Number(pokedexNumber)]),
     ]
   );
+
   return result.rows || null;
 }
 
 export async function fetchCardsByType(lang: string, type: string) {
   const safeLang = normalizeLanguage(lang);
+
   const result = await db.query(
     `
-    SELECT *
-    FROM mcc_cards
-    WHERE language_code = $1
-      AND types @> $2::jsonb
+    ${CARD_SELECT}
+    WHERE c.language_code = $1
+      AND c.types @> $2::jsonb
     `,
     [
       safeLang.toUpperCase(),
       JSON.stringify([decodeURIComponent(type)]),
     ]
   );
+
   return result.rows || null;
 }
 
