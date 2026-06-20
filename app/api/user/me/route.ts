@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { fetchUserByEmail } from "@/db/users/users.repo";
 
 export async function GET() {

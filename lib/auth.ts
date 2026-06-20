@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import { NextAuthOptions } from "next-auth";
 import Google from "next-auth/providers/google";
 
 import {
@@ -6,7 +6,7 @@ import {
   createUser,
 } from "@/db/users/users.repo";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID!,
@@ -14,9 +14,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 
-  events: {
+  callbacks: {
     async signIn({ user }) {
-      if (!user.email) return;
+      if (!user.email) return false;
 
       const existing = await fetchUserByEmail(user.email);
 
@@ -27,13 +27,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: user.image ?? "",
         });
       }
-    },
-  },
 
-  callbacks: {
+      return true;
+    },
+
     async jwt({ token }) {
       if (token.email) {
-        const dbUser = await fetchUserByEmail(token.email as string);
+        const dbUser = await fetchUserByEmail(token.email);
 
         if (dbUser) {
           token.userId = dbUser.id;
@@ -47,6 +47,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
     async session({ session, token }) {
       if (session.user) {
+        session.user.id = token.userId as string;
         session.user.name = token.name as string;
         session.user.image = token.image as string;
       }
@@ -54,4 +55,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-});
+};
