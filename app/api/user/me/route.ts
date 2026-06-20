@@ -1,9 +1,10 @@
-import { auth } from "@/lib/auth";
+
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { fetchUserByEmail } from "@/db/users/users.repo";
 
 export async function GET() {
-  const session = await auth();
-
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return Response.json(null, { status: 401 });
   }
