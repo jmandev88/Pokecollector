@@ -1,5 +1,6 @@
 // app/components/Card/CardTile.tsx
 
+import { formatVariantName } from "@/app/utils/formatVariantName";
 import Image from "next/image";
 
 type CardTileProps = {
@@ -31,7 +32,7 @@ export default function CardTile({ card }: CardTileProps) {
       />
       <div className="text-xs justify-between">
         <div>
-            {card.variant_name}
+            {formatVariantName(card.variant_name)}
         </div>
         <div>
             {card.rarity_code}
