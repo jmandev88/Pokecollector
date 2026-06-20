@@ -29,7 +29,7 @@ export default function CardTile({ card }: CardTileProps) {
         width={200}
         height={280}
       />
-      <div className="flex text-2xs justify-between">
+      <div className="text-xs justify-between">
         <div>
             {card.variant_name}
         </div>
