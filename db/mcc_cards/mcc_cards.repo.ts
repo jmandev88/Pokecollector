@@ -15,6 +15,8 @@ const CARD_SELECT = `
   FROM mcc_cards c
   LEFT JOIN mcc_card_variants v
     ON v.card_id = c.id
+
+    ORDER BY c.number::int
 `;
 
 export async function fetchCardsByExpansion(lang: string, setid: string) {
