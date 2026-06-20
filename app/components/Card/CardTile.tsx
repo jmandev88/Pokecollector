@@ -35,7 +35,7 @@ export default function CardTile({ card }: CardTileProps) {
             {formatVariantName(card.variant_name)}
         </div>
         <div>
-            {card.rarity_code}
+            {card.rarity}
         </div>
       </div>
     </div>
