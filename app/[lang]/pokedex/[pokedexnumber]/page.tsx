@@ -1,7 +1,6 @@
 import Header from "@/app/components/layout/Header/Header";
 import { fetchCardsByPokedexNumber } from "@/db/mcc_cards/mcc_cards.repo";
-import Image from "next/image";
-import Link from "next/link";
+import CardTile from "@/app/components/Card/CardTile";
 
 export default async function Pokedex({params,}: {params: Promise<{ lang: string, pokedexnumber: number }>}) {
   const { lang, pokedexnumber } = await params
@@ -12,21 +11,11 @@ export default async function Pokedex({params,}: {params: Promise<{ lang: string
       <Header lang={lang} />
 
       <div className="container min-w-full mx-auto p-4">
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-8">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-8">
             {cards ? cards.map((card) => (
-              <div key={card.id} className="">
-                    <Image
-                      className="w-full"
-                      src={
-                        card.images?.find((img: any) => img.type === "front")?.medium || "/placeholder_card.png"
-                      }
-                      alt={card.name}
-                      width={200}
-                      height={200}
-                    />
-              </div>
+              <CardTile key={card.id} card={card} />
             )) : (
-              <p>No cards found for this language and set.</p>
+              <p>No cards found for this language and rarity.</p>
             )}
           </div>
       </div>

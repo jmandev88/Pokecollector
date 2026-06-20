@@ -10,7 +10,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string, s
       <Header lang={lang} />
 
       <div className="container min-w-full mx-auto p-4">
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-8">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-8">
             {cards ? cards.map((card) => (
               <CardTile key={card.id} card={card} />
             )) : (
