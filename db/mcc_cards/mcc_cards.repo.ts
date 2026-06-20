@@ -16,7 +16,15 @@ const CARD_SELECT = `
   LEFT JOIN mcc_card_variants v
     ON v.card_id = c.id
 
-    ORDER BY c.number::int
+`;
+
+const CARD_ORDER = `
+ORDER BY
+  CASE
+    WHEN c.number ~ '^\\d+$'
+    THEN c.number::int
+  END,
+  c.number
 `;
 
 export async function fetchCardsByExpansion(lang: string, setid: string) {
@@ -27,6 +35,7 @@ export async function fetchCardsByExpansion(lang: string, setid: string) {
     ${CARD_SELECT}
     WHERE c.language_code = $1
       AND c.expansion_id = $2
+  ${CARD_ORDER}
     `,
     [safeLang.toUpperCase(), setid]
   );
@@ -42,6 +51,7 @@ export async function fetchCardsByRarity(lang: string, rarity: string) {
     ${CARD_SELECT}
     WHERE c.language_code = $1
       AND c.rarity = $2
+  ${CARD_ORDER}
     `,
     [safeLang.toUpperCase(), decodeURIComponent(rarity)]
   );
@@ -57,6 +67,7 @@ export async function fetchCardsByPokedexNumber(lang: string, pokedexNumber: num
     ${CARD_SELECT}
     WHERE c.language_code = $1
       AND c.national_pokedex_numbers @> $2::jsonb
+  ${CARD_ORDER}
     `,
     [
       safeLang.toUpperCase(),
@@ -75,6 +86,7 @@ export async function fetchCardsByType(lang: string, type: string) {
     ${CARD_SELECT}
     WHERE c.language_code = $1
       AND c.types @> $2::jsonb
+  ${CARD_ORDER}
     `,
     [
       safeLang.toUpperCase(),

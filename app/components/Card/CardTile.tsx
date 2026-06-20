@@ -7,6 +7,7 @@ type CardTileProps = {
     id: string;
     name: string;
     variant_name: string;
+    rarity_code: string;
     images?: {
       type: string;
       medium: string;
@@ -28,7 +29,14 @@ export default function CardTile({ card }: CardTileProps) {
         width={200}
         height={280}
       />
-      <div>{card.variant_name}</div>
+      <div className="flex text-2xs justify-between">
+        <div>
+            {card.variant_name}
+        </div>
+        <div>
+            {card.rarity_code}
+        </div>
+      </div>
     </div>
   );
 }
