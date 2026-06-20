@@ -49,7 +49,7 @@ export default function Header({ lang }: { lang: string }) {
       <div className="relative top-[2px]">Hi, {session.user?.name}</div>
       <div>
 
-      <img src={session.user?.image ?? ""} alt="avatar" width={100} className="rounded-full h-6 w-6 border-1 border-white absolute right-0 top-0" />
+      <img src={session.user?.image ?? ""} alt="avatar" width={100} className="rounded-full h-6 w-6 border-1 border-white/25 absolute right-0 top-0" />
       </div>
       </div>
 ) : (

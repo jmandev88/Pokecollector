@@ -22,7 +22,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
       <Header lang={lang} />
 
       <div className="container min-w-full mx-auto p-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 text-center pt-4 pb-8 border-b-1 border-white">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 text-center pt-4 pb-8 border-b-1 border-white/25">
           <div><div><span className="text-7xl font-bold">{formatCount(cardCount)}</span></div><div><span className="opacity-50">Cards</span></div></div>
           <div><div><span className="text-7xl font-bold">{formatCount(cardVariantsCount)}</span></div><div><span className="opacity-50">Card Variants</span></div></div>
           <div><div><span className="text-7xl font-bold">{formatCount(setCount)}</span></div><div><span className="opacity-50">Sets</span></div></div>
@@ -30,7 +30,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mt-8">
           <div>
-            <div className="text-2xl pb-4 mb-4 border-b border-white">Rarity</div>
+            <div className="text-2xl pb-4 mb-4 border-b border-white/25">Rarity</div>
             <div className="max-h-64 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
               {cardCountByRarity.map((rarity) => (
                 <Link href={`/${lang}/rarity/${rarity.rarity}`} key={rarity.rarity} className="flex justify-between items-center group">
@@ -41,7 +41,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
             </div>
           </div>
           <div>
-            <div className="text-2xl pb-4 mb-4 border-b border-white">Type</div>
+            <div className="text-2xl pb-4 mb-4 border-b border-white/25">Type</div>
             <div className="max-h-64 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
               {cardCountByType.map((type) => (
                 <Link href={`/${lang}/type/${type.card_type}`} key={type.card_type} className="flex justify-between items-center group">
@@ -52,7 +52,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
             </div>
           </div>
           <div>
-            <div className="text-2xl pb-4 mb-4 border-b border-white">Pokedex Number</div>  
+            <div className="text-2xl pb-4 mb-4 border-b border-white/25">Pokedex Number</div>  
             <div className="max-h-64 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
               {cardCountByPokedexNumber.map((pokedex) => (
                 <Link href={`/${lang}/pokedex/${pokedex.pokedex_number}`} key={pokedex.pokedex_number} className="flex justify-between items-center group">

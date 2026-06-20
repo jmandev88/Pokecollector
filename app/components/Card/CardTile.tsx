@@ -8,6 +8,10 @@ type CardTileProps = {
     id: string;
     name: string;
     variant_name: string;
+    variant_images?: {
+      type: string;
+      medium: string;
+    }[];
     rarity: string;
     images?: {
       type: string;
@@ -18,11 +22,12 @@ type CardTileProps = {
 
 export default function CardTile({ card }: CardTileProps) {
   const image =
+    card.variant_images?.find((img) => img.type === "front")?.medium ??
     card.images?.find((img) => img.type === "front")?.medium ??
     "/placeholder_card.png";
 
   return (
-    <div>
+    <div className="mb-4 pb-4 border-b border-white/25">
       <Image
         className="w-full"
         src={image}
@@ -30,7 +35,7 @@ export default function CardTile({ card }: CardTileProps) {
         width={200}
         height={280}
       />
-      <div className="text-xs justify-between">
+      <div className="text-xs justify-between pt-4">
         <div>
             {formatVariantName(card.variant_name)}
         </div>

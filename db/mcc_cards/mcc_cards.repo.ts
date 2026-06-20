@@ -10,7 +10,8 @@ const CARD_SELECT = `
     v.name AS variant_name,
     v.prices AS variant_prices,
     v.pop_reports AS variant_pop_reports,
-    v.language_code AS variant_language_code
+    v.language_code AS variant_language_code,
+    v.images AS variant_images
 
   FROM mcc_cards c
   LEFT JOIN mcc_card_variants v

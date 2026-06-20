@@ -5,6 +5,7 @@ import CardTile from "@/app/components/Card/CardTile";
 export default async function Sets({params,}: {params: Promise<{ lang: string, setid: string }>}) {
   const { lang, setid } = await params
   const cards = await fetchCardsByExpansion(lang, setid);
+  console.log(cards)
   return (
     <div className="min-h-screen min-w-full bg-gray-800 text-white">
       <Header lang={lang} />

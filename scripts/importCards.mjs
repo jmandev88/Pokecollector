@@ -291,7 +291,7 @@ const SET_IDS = [
 // "sv4k_ja",
 // "sv4m_ja",
 // "sv4pt5",
-// "sv5",
+"sv5"
 // "sv5a_ja",
 // "sv5k_ja",
 // "sv5m_ja",
@@ -425,11 +425,7 @@ const SET_IDS = [
 // "xy9_ja",
 // "xy_ja",
 // "xyp",
-// "xyp_ja",
-"tk1b",
-"tk2b",
-"xy6",
-"xy7"
+// "xyp_ja"
 ];
 
 
@@ -645,6 +641,7 @@ async function upsertVariants(card) {
         card_id,
         set_id,
         name,
+        images,
         prices,
         pop_reports
       )
@@ -652,12 +649,14 @@ async function upsertVariants(card) {
         ${card.id},
         ${card.expansion?.id ?? null},
         ${variant.name},
+        ${safeJson(variant.images, [])}::jsonb,
         ${safeJson(variant.prices, [])}::jsonb,
         ${safeJson(variant.pop_reports, [])}::jsonb
       )
       ON CONFLICT (card_id, name)
       DO UPDATE SET
         set_id = EXCLUDED.set_id,
+        images = EXCLUDED.images,
         prices = EXCLUDED.prices,
         pop_reports = EXCLUDED.pop_reports;
     `;
