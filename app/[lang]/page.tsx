@@ -4,10 +4,12 @@ import { fetchSetCount } from "@/db/mcc_sets/mcc_sets.repo";
 import { fetchSealedCount } from "@/db/mcc_sealed/mcc_sealed.repo";
 import { fetchCardVariantsCount } from "@/db/mcc_card_variants/mcc_card_variants.repo";
 import { getPokemonName } from "../utils/getPokemonName";
-
+import Image from "next/image";
 import formatCount from "../utils/formatCount";
 import Link from "next/dist/client/link";
-
+import { getFullUserCollection, getCollectionSetStats } from "@/app/actions/collections.actions";
+import { groupCollectionBySet } from "../utils/groupCollectionBySet";
+import { mergeCollectionWithStats } from "../utils/mergeCollectionWithStats";
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
   const { lang } = await params
   const cardCount = await fetchCardCount(lang);
@@ -17,6 +19,15 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
   const cardCountByRarity = await fetchCardCountByRarity(lang);
   const cardCountByType = await fetchCardCountByType(lang);
   const cardCountByPokedexNumber = await fetchCardCountByPokedexNumber(lang);
+  const collection = await getFullUserCollection();
+  const collectionStats = await getCollectionSetStats();
+
+  const sets = groupCollectionBySet(collection);
+
+  const setsWithStats = mergeCollectionWithStats(
+    sets,
+    collectionStats
+  );
 
   return (
     <div className="min-h-screen min-w-full bg-gray-800 text-white">
@@ -63,6 +74,41 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
               ))}
             </div>
           </div>
+        </div>
+        <div className="grid grid-cols-1">
+          {setsWithStats.map((set) => (
+            <div className="flex flex-wrap bg-white/5 rounded-lg p-4 mt-8" key={set.expansion_id}>
+              <div className="w-1/2">{set.expansion.name}</div>
+              <div className="w-1/2 grid grid-cols-2 gap-4">
+              <div>standard: {set.stats.owned_card_count} / {set.stats.card_count} - {set.stats.completion_normal_percent}%</div>
+              <div>master: {set.stats.owned_variant_count} / {set.stats.variant_count} - {set.stats.completion_master_percent}%</div></div>
+              <div className="w-full grid grid-cols-8 gap-4 mt-4 pt-4 border-t border-white/25">
+{set.cards.slice(0, 5).map((card) => {
+  const image =
+    card.variant_images?.find((img) => img.type === "front")?.medium ??
+    card.images?.find((img) => img.type === "front")?.medium ??
+    "/placeholder_card.png";
+
+  return (
+    <div key={card.id}>
+      <div>
+        <Image
+          className="w-full"
+          src={image}
+          alt={card.name}
+          width={200}
+          height={280}
+        />
+      </div>
+    </div>
+  );
+})}
+<div></div>
+<div></div>
+<div></div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
