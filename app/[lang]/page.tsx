@@ -3,6 +3,7 @@ import { fetchCardCount, fetchCardCountByRarity, fetchCardCountByType, fetchCard
 import { fetchSetCount } from "@/db/mcc_sets/mcc_sets.repo";
 import { fetchSealedCount } from "@/db/mcc_sealed/mcc_sealed.repo";
 import { fetchCardVariantsCount } from "@/db/mcc_card_variants/mcc_card_variants.repo";
+import { getPokemonName } from "../utils/getPokemonName";
 
 import formatCount from "../utils/formatCount";
 import Link from "next/dist/client/link";
@@ -56,7 +57,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
             <div className="max-h-64 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
               {cardCountByPokedexNumber.map((pokedex) => (
                 <Link href={`/${lang}/pokedex/${pokedex.pokedex_number}`} key={pokedex.pokedex_number} className="flex justify-between items-center group">
-                  <span className="text-lg font-semibold group-hover:underline group-hover:underline-offset-4">{pokedex.pokedex_number}</span>
+                  <span className="text-lg font-semibold group-hover:underline group-hover:underline-offset-4">{getPokemonName(pokedex.pokedex_number)}</span>
                   <span className="text-sm">{formatCount(pokedex.card_count)} cards, {formatCount(pokedex.collectible_count)} collectibles</span>
                 </Link>
               ))}

@@ -38,7 +38,7 @@ export default function CardTile({
     "/placeholder_card.png";
 
   return (
-    <div className="mb-4 pb-4 border-b border-white/25">
+    <div className="mb-4 justify-between flex flex-col border-b border-white/25">
       <Image
         className="w-full"
         src={image}
@@ -47,21 +47,21 @@ export default function CardTile({
         height={280}
       />
       
-      <div className="text-xs pt-4">
-        <div>
-            {formatVariantName(card.variant_name)}
-        </div>
-
-        <div>
-            {card.rarity}
-        </div>
+      <div className="text-xs pt-4 mb-4 ">
+            <CardQuantityControls
+                variantId={card.variant_id}
+                quantity={quantity}
+            />
 
         <div className="mt-4">
-  <CardQuantityControls
-    variantId={card.variant_id}
-    quantity={quantity}
-  />
-</div>
+        <div className="whitespace-nowrap overflow-hidden text-ellipsis">
+            {formatVariantName(card.variant_name) ? card.name + " - " + formatVariantName(card.variant_name) : card.name}
+        </div>
+
+        <div>
+            {card.rarity ?? <span dangerouslySetInnerHTML={{__html: '&nbsp;'}}></span>}
+        </div>
+        </div>
         </div>
 
     </div>

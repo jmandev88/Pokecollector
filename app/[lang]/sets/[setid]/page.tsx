@@ -36,7 +36,7 @@ export default async function Sets({
       <Header lang={lang} />
 
       <div className="container min-w-full mx-auto p-4">
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-8">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
           {cards ? (
             cards.map((card) => (
               <CardTile
