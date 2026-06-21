@@ -13,7 +13,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
     const session = await getServerSession(authOptions);
   
     if (!session?.user?.id) {
-      redirect("/login");
+      redirect("/en");
     }
   return (
     <div className="min-h-screen min-w-full bg-gray-800 text-white">

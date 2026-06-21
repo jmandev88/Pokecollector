@@ -21,7 +21,7 @@ export default async function Sets({
     const session = await getServerSession(authOptions);
   
     if (!session?.user?.id) {
-      redirect("/login");
+      redirect("/en");
     }
 
   let collectionMap: Record<string, number> = {};

@@ -11,7 +11,7 @@ export default async function Rarity({params,}: {params: Promise<{ lang: string,
       const session = await getServerSession(authOptions);
     
       if (!session?.user?.id) {
-        redirect("/login");
+        redirect("/en");
       }
   
   return (
