@@ -2,7 +2,8 @@
 
 export function mergeCollectionWithStats(
   sets: any[],
-  stats: any[]
+  stats: any[],
+  other_cards: any[]
 ) {
   const statsMap = Object.fromEntries(
     stats.map((stat) => [
@@ -13,7 +14,7 @@ export function mergeCollectionWithStats(
 
   return sets.map((set) => ({
     ...set,
-
+    other_cards: other_cards[0].others_cards,
     stats: statsMap[set.expansionId] ?? {
       variant_count: 0,
       owned_count: 0,

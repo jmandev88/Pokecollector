@@ -209,3 +209,56 @@ HAVING
 
   return result.rows;
 }
+
+export async function fetchTradeCandidates(
+  userId: string
+) {
+  const result = await db.query(
+    `
+    SELECT
+      u.id AS owner_id,
+      u.name AS owner_name,
+
+      c.expansion_id,
+      c.expansion,
+
+      c.id AS card_id,
+      c.name AS card_name,
+      c.number,
+
+      v.id AS variant_id,
+      v.name AS variant_name,
+      v.images AS variant_images,
+
+      uc.quantity
+
+    FROM mcc_user_collection uc
+
+    INNER JOIN mcc_users u
+      ON u.id = uc.user_id
+
+    INNER JOIN mcc_card_variants v
+      ON v.id = uc.variant_id
+
+    INNER JOIN mcc_cards c
+      ON c.id = v.card_id
+
+    WHERE
+      uc.user_id <> $1
+
+      AND NOT EXISTS (
+        SELECT 1
+        FROM mcc_user_collection mine
+        WHERE mine.user_id = $1
+        AND mine.variant_id = uc.variant_id
+      )
+
+    ORDER BY
+      c.expansion_id,
+      c.number::int
+    `,
+    [userId]
+  );
+
+  return result.rows;
+}

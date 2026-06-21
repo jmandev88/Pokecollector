@@ -14,8 +14,13 @@ import { Key } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { groupTradesBySet } from "../utils/groupTradesBySet";
+import { fetchTradeCandidates } from "@/db/mcc_user_collection/mcc_user_collection.repo";
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
-  const { lang } = await params;
+  const { lang } = await params
+
+  const session = await getServerSession(authOptions);
+
 
   const cardCount = await fetchCardCount(lang);
   const setCount = await fetchSetCount(lang);
@@ -24,15 +29,23 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
   const cardCountByRarity = await fetchCardCountByRarity(lang);
   const cardCountByType = await fetchCardCountByType(lang);
   const cardCountByPokedexNumber = await fetchCardCountByPokedexNumber(lang);
-  const collection = await getFullUserCollection();
-  const collectionStats = await getCollectionSetStats();
 
-  const sets = groupCollectionBySet(collection);
+  let setsWithStats: any[] = [];
 
-  const setsWithStats = mergeCollectionWithStats(
-    sets,
-    collectionStats
-  );
+  if (session?.user?.id) {
+    const collection = await getFullUserCollection();
+    const collectionStats = await getCollectionSetStats();
+
+    const sets = groupCollectionBySet(collection);
+    const trades = await fetchTradeCandidates(session?.user?.id);
+const tradesBySet = groupTradesBySet(trades);
+
+    setsWithStats = mergeCollectionWithStats(
+      sets,
+      collectionStats,
+      tradesBySet
+    );
+  }
 
   return (
     <div className="min-h-screen min-w-full bg-gray-800 text-white">
@@ -81,7 +94,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
           </div>
         </div>
         <div className="grid grid-cols-1">
-          {setsWithStats.map((set) => (
+          {session?.user?.id && setsWithStats ? setsWithStats.map((set) => (
             <div className="flex flex-wrap bg-white/5 rounded-lg p-4 mt-8" key={set.expansion_id}>
               <div className="w-1/2">{set.expansion.name}</div>
               <div className="w-1/2 grid grid-cols-2 gap-4">
@@ -108,12 +121,34 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
                     </div>
                   );
                 })}
-                <div></div>
-                <div></div>
-                <div></div>
+                <div className="col-span-3">
+                  <div>Cards others have</div>
+                  <div className="mt-4 relative">
+                    {set.other_cards.slice(0, 5).map((card: { variant_images: any[]; images: any[]; id: Key | null | undefined; name: string; }, index: number) => {
+                      const image =
+                        card.variant_images?.find((img: { type: string; }) => img.type === "front")?.medium ??
+                        card.images?.find((img: { type: string; }) => img.type === "front")?.medium ??
+                        "/placeholder_card.png";
+
+                      return (
+                        <div key={card.id} className={`absolute left-[${index * 20}px] top-0`}>
+                          <div>
+                            <Image
+                              className="w-full"
+                              src={image}
+                              alt={card.name}
+                              width={200}
+                              height={280}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
+          )) : false }
         </div>
       </div>
     </div>
