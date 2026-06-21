@@ -6,6 +6,7 @@ import { fetchUserCollection } from "@/db/mcc_user_collection/mcc_user_collectio
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function Sets({
   params,
@@ -16,7 +17,12 @@ export default async function Sets({
 
   const cards = await fetchCardsByExpansion(lang, setid);
 
-  const session = await getServerSession(authOptions);
+  
+    const session = await getServerSession(authOptions);
+  
+    if (!session?.user?.id) {
+      redirect("/login");
+    }
 
   let collectionMap: Record<string, number> = {};
 

@@ -11,8 +11,18 @@ import { getFullUserCollection, getCollectionSetStats } from "@/app/actions/coll
 import { groupCollectionBySet } from "../utils/groupCollectionBySet";
 import { mergeCollectionWithStats } from "../utils/mergeCollectionWithStats";
 import { Key } from "react";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
-  const { lang } = await params
+  const { lang } = await params;
+
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
   const cardCount = await fetchCardCount(lang);
   const setCount = await fetchSetCount(lang);
   const sealedCount = await fetchSealedCount(lang);
@@ -76,7 +86,40 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1"> 
+        <div className="grid grid-cols-1">
+          {setsWithStats.map((set) => (
+            <div className="flex flex-wrap bg-white/5 rounded-lg p-4 mt-8" key={set.expansion_id}>
+              <div className="w-1/2">{set.expansion.name}</div>
+              <div className="w-1/2 grid grid-cols-2 gap-4">
+              <div>standard: {set.stats.owned_card_count} / {set.stats.card_count} - {set.stats.completion_normal_percent}%</div>
+              <div>master: {set.stats.owned_variant_count} / {set.stats.variant_count} - {set.stats.completion_master_percent}%</div></div>
+              <div className="w-full grid grid-cols-8 gap-4 mt-4 pt-4 border-t border-white/25">
+                {set.cards.slice(0, 5).map((card: { variant_images: any[]; images: any[]; id: Key | null | undefined; name: string; }) => {
+                  const image =
+                    card.variant_images?.find((img: { type: string; }) => img.type === "front")?.medium ??
+                    card.images?.find((img: { type: string; }) => img.type === "front")?.medium ??
+                    "/placeholder_card.png";
+
+                  return (
+                    <div key={card.id}>
+                      <div>
+                        <Image
+                          className="w-full"
+                          src={image}
+                          alt={card.name}
+                          width={200}
+                          height={280}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+                <div></div>
+                <div></div>
+                <div></div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

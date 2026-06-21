@@ -2,10 +2,19 @@ import Header from "@/app/components/layout/Header/Header";
 import { fetchSet } from "@/db/mcc_sets/mcc_sets.repo";
 import Image from "next/image";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
   const { lang } = await params
   const sets = await fetchSet(lang);
+  
+    const session = await getServerSession(authOptions);
+  
+    if (!session?.user?.id) {
+      redirect("/login");
+    }
   return (
     <div className="min-h-screen min-w-full bg-gray-800 text-white">
       <Header lang={lang} />
