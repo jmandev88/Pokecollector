@@ -14,7 +14,7 @@ export function mergeCollectionWithStats(
 
   return sets.map((set) => ({
     ...set,
-    other_cards: other_cards[0].others_cards,
+    other_cards: other_cards.find((s) => s.expansion_id === set.expansionId)?.others_cards || [],
     stats: statsMap[set.expansionId] ?? {
       variant_count: 0,
       owned_count: 0,

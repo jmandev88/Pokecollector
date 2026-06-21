@@ -14,6 +14,7 @@ import { Key } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { formatVariantName } from "../utils/formatVariantName";
 import { groupTradesBySet } from "../utils/groupTradesBySet";
 import { fetchTradeCandidates } from "@/db/mcc_user_collection/mcc_user_collection.repo";
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
@@ -45,6 +46,7 @@ const tradesBySet = groupTradesBySet(trades);
       collectionStats,
       tradesBySet
     );
+
   }
 
   return (
@@ -100,52 +102,55 @@ const tradesBySet = groupTradesBySet(trades);
               <div className="w-1/2 grid grid-cols-2 gap-4">
               <div>standard: {set.stats.owned_card_count} / {set.stats.card_count} - {set.stats.completion_normal_percent}%</div>
               <div>master: {set.stats.owned_variant_count} / {set.stats.variant_count} - {set.stats.completion_master_percent}%</div></div>
-              <div className="w-full grid grid-cols-8 gap-4 mt-4 pt-4 border-t border-white/25">
-                {set.cards.slice(0, 5).map((card: { variant_images: any[]; images: any[]; id: Key | null | undefined; name: string; }) => {
-                  const image =
-                    card.variant_images?.find((img: { type: string; }) => img.type === "front")?.medium ??
-                    card.images?.find((img: { type: string; }) => img.type === "front")?.medium ??
-                    "/placeholder_card.png";
-
-                  return (
-                    <div key={card.id}>
-                      <div>
-                        <Image
-                          className="w-full"
-                          src={image}
-                          alt={card.name}
-                          width={200}
-                          height={280}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="col-span-3">
-                  <div>Cards others have</div>
-                  <div className="mt-4 relative">
-                    {set.other_cards.slice(0, 5).map((card: { variant_images: any[]; images: any[]; id: Key | null | undefined; name: string; }, index: number) => {
-                      const image =
-                        card.variant_images?.find((img: { type: string; }) => img.type === "front")?.medium ??
-                        card.images?.find((img: { type: string; }) => img.type === "front")?.medium ??
-                        "/placeholder_card.png";
-
-                      return (
-                        <div key={card.id} className={`absolute left-[${index * 20}px] top-0`}>
-                          <div>
-                            <Image
-                              className="w-full"
-                              src={image}
-                              alt={card.name}
-                              width={200}
-                              height={280}
-                            />
-                          </div>
+              <div className="flex gap-4 justify-between w-full mt-4 pt-4 border-t border-white/25">
+                <div className="w-2/3 grid grid-cols-5 gap-4">
+                  {set.cards.slice(0, 5).map((card: { variant_images: any[]; images: any[]; id: Key | null | undefined; name: string; }) => {
+                    const image =
+                      card.variant_images?.find((img: { type: string; }) => img.type === "front")?.medium ??
+                      card.images?.find((img: { type: string; }) => img.type === "front")?.medium ??
+                      "/placeholder_card.png"; 
+                    return (
+                      <div key={card.id}>
+                        <div>
+                          <Image
+                            className="w-full"
+                            src={image}
+                            alt={card.name}
+                            width={200}
+                            height={280}
+                          />
                         </div>
-                      );
-                    })}
+                      </div>
+                    );
+                  })}
                   </div>
-                </div>
+
+            {set.other_cards?.length > 0 && (
+  <div className="w-1/3">
+
+    <div className="text-sm font-bold">
+      Cards others have
+    </div>
+
+    <div className="relative mb-2 pb-2 pt-2 mt-2 border-t border-white/25">
+      {set.other_cards.slice(0, 5).map((card) => (
+        <div
+          key={card.id}
+          className="justify-between mb-2 pb-2 border-b border-white/25 flex text-xs"
+        >
+          <div>
+            {card.card_name} - {formatVariantName(card.variant_name)}
+          </div>
+
+          <div>
+            {card.owner_name}
+          </div>
+        </div>
+      ))}
+    </div>
+
+  </div>
+)}
               </div>
             </div>
           )) : false }
