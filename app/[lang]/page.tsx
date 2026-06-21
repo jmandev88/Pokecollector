@@ -133,7 +133,7 @@ const tradesBySet = groupTradesBySet(trades);
     </div>
 
     <div className="relative mb-2 pb-2 pt-2 mt-2 border-t border-white/25">
-      {set.other_cards.slice(0, 5).map((card) => (
+      {set.other_cards.slice(0, 5).map((card: { variant_images: any[]; images: any[]; id: Key | null | undefined; name: string; card_name: string; variant_name: string; owner_name: string; }, index: number) => (
         <div
           key={card.id}
           className="justify-between mb-2 pb-2 border-b border-white/25 flex text-xs"
