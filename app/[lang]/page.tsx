@@ -15,13 +15,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
-  const { lang } = await params
-
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    redirect("/en");
-  }
+  const { lang } = await params;
 
   const cardCount = await fetchCardCount(lang);
   const setCount = await fetchSetCount(lang);

@@ -6,8 +6,17 @@ import { fetchCardVariantsCount } from "@/db/mcc_card_variants/mcc_card_variants
 import { getPokemonName } from "@/app/utils/getPokemonName";
 import formatCount from "@/app/utils/formatCount";
 import Link from "next/dist/client/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
   const { lang } = await params
+
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    redirect("/en");
+  }
 
 
   const cardCount = await fetchCardCount(lang);
