@@ -10,6 +10,7 @@ import Link from "next/dist/client/link";
 import { getFullUserCollection, getCollectionSetStats } from "@/app/actions/collections.actions";
 import { groupCollectionBySet } from "../utils/groupCollectionBySet";
 import { mergeCollectionWithStats } from "../utils/mergeCollectionWithStats";
+import { Key } from "react";
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
   const { lang } = await params
   const cardCount = await fetchCardCount(lang);
@@ -83,10 +84,10 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
               <div>standard: {set.stats.owned_card_count} / {set.stats.card_count} - {set.stats.completion_normal_percent}%</div>
               <div>master: {set.stats.owned_variant_count} / {set.stats.variant_count} - {set.stats.completion_master_percent}%</div></div>
               <div className="w-full grid grid-cols-8 gap-4 mt-4 pt-4 border-t border-white/25">
-{set.cards.slice(0, 5).map((card) => {
+{set.cards.slice(0, 5).map((card: { variant_images: any[]; images: any[]; id: Key | null | undefined; name: string; }) => {
   const image =
-    card.variant_images?.find((img) => img.type === "front")?.medium ??
-    card.images?.find((img) => img.type === "front")?.medium ??
+    card.variant_images?.find((img: { type: string; }) => img.type === "front")?.medium ??
+    card.images?.find((img: { type: string; }) => img.type === "front")?.medium ??
     "/placeholder_card.png";
 
   return (
