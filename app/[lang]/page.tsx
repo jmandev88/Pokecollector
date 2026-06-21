@@ -57,7 +57,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
             <div className="max-h-64 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
               {cardCountByPokedexNumber.map((pokedex) => (
                 <Link href={`/${lang}/pokedex/${pokedex.pokedex_number}`} key={pokedex.pokedex_number} className="flex justify-between items-center group">
-                  <span className="text-lg font-semibold group-hover:underline group-hover:underline-offset-4">{getPokemonName(pokedex.pokedex_number)}</span>
+                  <span className="text-lg font-semibold group-hover:underline group-hover:underline-offset-4">#{pokedex.pokedex_number} {getPokemonName(pokedex.pokedex_number)}</span>
                   <span className="text-sm">{formatCount(pokedex.card_count)} cards, {formatCount(pokedex.collectible_count)} collectibles</span>
                 </Link>
               ))}
