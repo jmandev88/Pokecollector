@@ -205,81 +205,47 @@ const tradesBySet = groupTradesBySet(trades);
           )) : false }
         </div>
         {session?.user?.id && sealedBoosterStats && (
-          <div className="bg-white/5 rounded-lg p-4 mt-8">
-            <div className="flex flex-wrap gap-4 justify-between">
-              <div>
-                <div className="text-2xl font-bold">Sealed Booster Packs</div>
-                <div className="mt-2 text-sm opacity-75">
-                  {sealedBoosterStats.owned_booster_pack_count} / {sealedBoosterStats.booster_pack_count} collected - {sealedBoosterStats.completion_percent ?? 0}%
-                </div>
-              </div>
-
-              <div className="text-right">
-                <div className="text-4xl font-bold">
-                  {sealedBoosterStats.quantity_count}
-                </div>
-                <div className="text-sm opacity-75">total owned</div>
-              </div>
+          <div className="flex flex-wrap bg-white/5 rounded-lg p-4 mt-8">
+            <div className="w-1/2">Sealed Booster Packs</div>
+            <div className="w-1/2 grid grid-cols-2 gap-4">
+              <div>standard: {sealedBoosterStats.owned_booster_pack_count} / {sealedBoosterStats.booster_pack_count} - {sealedBoosterStats.completion_percent ?? 0}%</div>
+              <div>quantity: {sealedBoosterStats.quantity_count}</div>
             </div>
+            <div className="flex gap-4 justify-between w-full mt-4 pt-4 border-t border-white/25">
+              <div className="w-2/3 grid grid-cols-5 gap-4">
+                {latestOwnedSealedBoosters.slice(0, 5).map((product) => {
+                  const image =
+                    product.images?.find((sealedImage) => sealedImage.type === "front")?.medium ??
+                    product.images?.[0]?.medium ??
+                    product.images?.[0]?.small ??
+                    product.images?.[0]?.large ??
+                    "/placeholder_card.png";
 
-            <div className="mt-4 grid gap-6 border-t border-white/25 pt-4 lg:grid-cols-2">
-              <div>
-                <div className="text-sm font-bold">
-                  Latest booster packs added
-                </div>
-
-                <div className="mt-2 max-h-64 overflow-y-auto pr-4">
-                  {latestOwnedSealedBoosters.length > 0 ? (
-                    latestOwnedSealedBoosters.map((product) => {
-                      const image =
-                        product.images?.find((sealedImage) => sealedImage.type === "front")?.small ??
-                        product.images?.[0]?.small ??
-                        product.images?.[0]?.medium ??
-                        product.images?.[0]?.large ??
-                        "/placeholder_card.png";
-
-                      return (
-                        <Link
-                          key={product.sealed_id}
-                          href={`/${lang}/sealed/${product.sealed_id}`}
-                          className="mb-2 flex items-center justify-between gap-3 border-b border-white/25 pb-2 text-xs hover:underline hover:underline-offset-4"
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <Image
-                              src={image}
-                              alt={product.sealed_name}
-                              width={48}
-                              height={48}
-                              className="h-12 w-12 shrink-0 object-contain"
-                            />
-
-                            <span className="truncate font-semibold">
-                              {product.sealed_name}
-                            </span>
-                          </div>
-
-                          <div className="shrink-0 text-right opacity-75">
-                            qty {product.quantity}
-                          </div>
-                        </Link>
-                      );
-                    })
-                  ) : (
-                    <div className="text-xs opacity-75">
-                      No booster packs collected yet.
-                    </div>
-                  )}
-                </div>
+                  return (
+                    <Link
+                      key={product.sealed_id}
+                      href={`/${lang}/sealed/${product.sealed_id}`}
+                    >
+                      <Image
+                        className="w-full"
+                        src={image}
+                        alt={product.sealed_name}
+                        width={200}
+                        height={200}
+                      />
+                    </Link>
+                  );
+                })}
               </div>
 
               {sealedBoosterTrades.length > 0 && (
-                <div>
+                <div className="w-1/3">
                   <div className="text-sm font-bold">
                     Booster packs others have
                   </div>
 
-                  <div className="mt-2 max-h-64 overflow-y-auto pr-4">
-                    {sealedBoosterTrades.slice(0, 20).map((product) => {
+                  <div className="relative mb-2 pb-2 pt-2 mt-2 border-t border-white/25">
+                    {sealedBoosterTrades.slice(0, 5).map((product) => {
                       const image =
                         product.images?.find((sealedImage) => sealedImage.type === "front")?.small ??
                         product.images?.[0]?.small ??
@@ -288,30 +254,31 @@ const tradesBySet = groupTradesBySet(trades);
                         "/placeholder_card.png";
 
                       return (
-                        <Link
+                        <div
                           key={`${product.owner_id}-${product.sealed_id}`}
-                          href={`/${lang}/sealed/${product.sealed_id}`}
-                          className="mb-2 flex items-center justify-between gap-3 border-b border-white/25 pb-2 text-xs hover:underline hover:underline-offset-4"
+                          className="justify-between mb-2 pb-2 border-b border-white/25 flex text-xs"
                         >
-                          <div className="flex min-w-0 items-center gap-3">
+                          <Link
+                            href={`/${lang}/sealed/${product.sealed_id}`}
+                            className="flex min-w-0 items-center gap-2 hover:underline hover:underline-offset-4"
+                          >
                             <Image
                               src={image}
                               alt={product.sealed_name}
-                              width={48}
-                              height={48}
-                              className="h-12 w-12 shrink-0 object-contain"
+                              width={32}
+                              height={32}
+                              className="h-8 w-8 shrink-0 object-contain"
                             />
 
-                            <span className="truncate font-semibold">
+                            <span className="truncate">
                               {product.sealed_name}
                             </span>
-                          </div>
+                          </Link>
 
-                          <div className="shrink-0 text-right">
-                            <div>{product.owner_name ?? "Unknown user"}</div>
-                            <div className="opacity-75">qty {product.quantity}</div>
+                          <div>
+                            {product.owner_name ?? "Unknown user"}
                           </div>
-                        </Link>
+                        </div>
                       );
                     })}
                   </div>
