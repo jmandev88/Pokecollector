@@ -48,6 +48,11 @@ export async function fetchSealedGrouped(lang: string) {
       AND sets.details->>'name' = sealed.expansion->>'name'
       AND sets.details->>'language_code' = sealed.language_code
     WHERE sealed.language_code = $1
+      AND sealed.type = 'Booster Pack'
+      AND (
+        sealed.name = (sealed.expansion->>'name') || ' Booster Pack'
+        OR sealed.name = 'Base Set Booster Pack'
+      )
     ORDER BY
       to_date(sets.details->>'release_date', 'YYYY/MM/DD') DESC
     `,

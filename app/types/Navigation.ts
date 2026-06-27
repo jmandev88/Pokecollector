@@ -4,6 +4,7 @@ export type NavTarget = "_self" | "_blank";
 export type NavLinks =
   | "/"
   | "/sets"
+  | "/sealed"
   | "/price-browser"
   | "/performance"
   | "/illustrators"
@@ -16,6 +17,7 @@ export type NavLinks =
 export type NavLabels =
   | "Home"
   | "Sets"
+  | "Sealed"
   | "Price Browser"
   | "Performance"
   | "Illustrators"

@@ -2,13 +2,16 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import {
   addCardToCollection,
   removeCardFromCollection,
   fetchFullUserCollection,
   fetchCollectionSetStats
 } from "@/db/mcc_user_collection/mcc_user_collection.repo";
+import {
+  addSealedToCollection,
+  removeSealedFromCollection,
+} from "@/db/mcc_user_sealed_collection/mcc_user_sealed_collection.repo";
 
 export async function incrementCollection(
   variantId: string
@@ -37,6 +40,36 @@ export async function decrementCollection(
   await removeCardFromCollection(
     session.user.id,
     variantId
+  );
+}
+
+export async function incrementSealedCollection(
+  sealedId: string
+) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Not authenticated");
+  }
+
+  await addSealedToCollection(
+    session.user.id,
+    sealedId
+  );
+}
+
+export async function decrementSealedCollection(
+  sealedId: string
+) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Not authenticated");
+  }
+
+  await removeSealedFromCollection(
+    session.user.id,
+    sealedId
   );
 }
 

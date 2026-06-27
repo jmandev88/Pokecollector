@@ -17,6 +17,26 @@ import { redirect } from "next/navigation";
 import { formatVariantName } from "../utils/formatVariantName";
 import { groupTradesBySet } from "../utils/groupTradesBySet";
 import { fetchTradeCandidates } from "@/db/mcc_user_collection/mcc_user_collection.repo";
+import {
+  fetchSealedBoosterCollectionStats,
+  fetchSealedBoosterTradeCandidates,
+} from "@/db/mcc_user_sealed_collection/mcc_user_sealed_collection.repo";
+
+type SealedBoosterStats = {
+  booster_pack_count: number;
+  owned_booster_pack_count: number;
+  quantity_count: number;
+  completion_percent: string | number | null;
+};
+
+type SealedBoosterTradeCandidate = {
+  owner_id: string;
+  owner_name: string | null;
+  sealed_id: string;
+  sealed_name: string;
+  quantity: number;
+};
+
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
   const { lang } = await params
 
@@ -32,10 +52,20 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
   const cardCountByPokedexNumber = await fetchCardCountByPokedexNumber(lang);
 
   let setsWithStats: any[] = [];
+  let sealedBoosterStats: SealedBoosterStats | null = null;
+  let sealedBoosterTrades: SealedBoosterTradeCandidate[] = [];
 
   if (session?.user?.id) {
     const collection = await getFullUserCollection();
     const collectionStats = await getCollectionSetStats();
+    sealedBoosterStats = await fetchSealedBoosterCollectionStats(
+      session.user.id,
+      lang
+    );
+    sealedBoosterTrades = await fetchSealedBoosterTradeCandidates(
+      session.user.id,
+      lang
+    );
 
     const sets = groupCollectionBySet(collection);
     const trades = await fetchTradeCandidates(session?.user?.id);
@@ -155,6 +185,54 @@ const tradesBySet = groupTradesBySet(trades);
             </div>
           )) : false }
         </div>
+        {session?.user?.id && sealedBoosterStats && (
+          <div className="bg-white/5 rounded-lg p-4 mt-8">
+            <div className="flex flex-wrap gap-4 justify-between">
+              <div>
+                <div className="text-2xl font-bold">Sealed Booster Packs</div>
+                <div className="mt-2 text-sm opacity-75">
+                  {sealedBoosterStats.owned_booster_pack_count} / {sealedBoosterStats.booster_pack_count} collected - {sealedBoosterStats.completion_percent ?? 0}%
+                </div>
+              </div>
+
+              <div className="text-right">
+                <div className="text-4xl font-bold">
+                  {sealedBoosterStats.quantity_count}
+                </div>
+                <div className="text-sm opacity-75">total owned</div>
+              </div>
+            </div>
+
+            {sealedBoosterTrades.length > 0 && (
+              <div className="mt-4 border-t border-white/25 pt-4">
+                <div className="text-sm font-bold">
+                  Booster packs others have
+                </div>
+
+                <div className="mt-2 max-h-64 overflow-y-auto pr-4">
+                  {sealedBoosterTrades.slice(0, 20).map((product) => (
+                    <div
+                      key={`${product.owner_id}-${product.sealed_id}`}
+                      className="mb-2 flex justify-between border-b border-white/25 pb-2 text-xs"
+                    >
+                      <Link
+                        href={`/${lang}/sealed/${product.sealed_id}`}
+                        className="font-semibold hover:underline hover:underline-offset-4"
+                      >
+                        {product.sealed_name}
+                      </Link>
+
+                      <div className="text-right">
+                        <div>{product.owner_name ?? "Unknown user"}</div>
+                        <div className="opacity-75">qty {product.quantity}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
