@@ -19,6 +19,7 @@ import { groupTradesBySet } from "../utils/groupTradesBySet";
 import { fetchTradeCandidates } from "@/db/mcc_user_collection/mcc_user_collection.repo";
 import {
   fetchSealedBoosterCollectionStats,
+  fetchLatestOwnedSealedBoosters,
   fetchSealedBoosterTradeCandidates,
 } from "@/db/mcc_user_sealed_collection/mcc_user_sealed_collection.repo";
 
@@ -29,9 +30,7 @@ type SealedBoosterStats = {
   completion_percent: string | number | null;
 };
 
-type SealedBoosterTradeCandidate = {
-  owner_id: string;
-  owner_name: string | null;
+type SealedBoosterProduct = {
   sealed_id: string;
   sealed_name: string;
   images?: {
@@ -41,6 +40,15 @@ type SealedBoosterTradeCandidate = {
     large?: string;
   }[];
   quantity: number;
+};
+
+type SealedBoosterTradeCandidate = SealedBoosterProduct & {
+  owner_id: string;
+  owner_name: string | null;
+};
+
+type OwnedSealedBooster = SealedBoosterProduct & {
+  updated_at: string;
 };
 
 export default async function Sets({params,}: {params: Promise<{ lang: string }>}) {
@@ -60,6 +68,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
   let setsWithStats: any[] = [];
   let sealedBoosterStats: SealedBoosterStats | null = null;
   let sealedBoosterTrades: SealedBoosterTradeCandidate[] = [];
+  let latestOwnedSealedBoosters: OwnedSealedBooster[] = [];
 
   if (session?.user?.id) {
     const collection = await getFullUserCollection();
@@ -69,6 +78,10 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
       lang
     );
     sealedBoosterTrades = await fetchSealedBoosterTradeCandidates(
+      session.user.id,
+      lang
+    );
+    latestOwnedSealedBoosters = await fetchLatestOwnedSealedBoosters(
       session.user.id,
       lang
     );
@@ -209,51 +222,102 @@ const tradesBySet = groupTradesBySet(trades);
               </div>
             </div>
 
-            {sealedBoosterTrades.length > 0 && (
-              <div className="mt-4 border-t border-white/25 pt-4">
+            <div className="mt-4 grid gap-6 border-t border-white/25 pt-4 lg:grid-cols-2">
+              <div>
                 <div className="text-sm font-bold">
-                  Booster packs others have
+                  Latest booster packs added
                 </div>
 
                 <div className="mt-2 max-h-64 overflow-y-auto pr-4">
-                  {sealedBoosterTrades.slice(0, 20).map((product) => (
-                    <div key={`${product.owner_id}-${product.sealed_id}`}>
-                      <Link
-                        href={`/${lang}/sealed/${product.sealed_id}`}
-                        className="mb-2 flex items-center justify-between gap-3 border-b border-white/25 pb-2 text-xs hover:underline hover:underline-offset-4"
-                      >
-                        <div className="flex min-w-0 items-center gap-3">
-                          {product.images?.[0] && (
+                  {latestOwnedSealedBoosters.length > 0 ? (
+                    latestOwnedSealedBoosters.map((product) => {
+                      const image =
+                        product.images?.find((sealedImage) => sealedImage.type === "front")?.small ??
+                        product.images?.[0]?.small ??
+                        product.images?.[0]?.medium ??
+                        product.images?.[0]?.large ??
+                        "/placeholder_card.png";
+
+                      return (
+                        <Link
+                          key={product.sealed_id}
+                          href={`/${lang}/sealed/${product.sealed_id}`}
+                          className="mb-2 flex items-center justify-between gap-3 border-b border-white/25 pb-2 text-xs hover:underline hover:underline-offset-4"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
                             <Image
-                              src={
-                                product.images.find((image) => image.type === "front")?.small ??
-                                product.images[0].small ??
-                                product.images[0].medium ??
-                                product.images[0].large ??
-                                "/placeholder_card.png"
-                              }
+                              src={image}
                               alt={product.sealed_name}
                               width={48}
                               height={48}
                               className="h-12 w-12 shrink-0 object-contain"
                             />
-                          )}
 
-                          <span className="truncate font-semibold">
-                            {product.sealed_name}
-                          </span>
-                        </div>
+                            <span className="truncate font-semibold">
+                              {product.sealed_name}
+                            </span>
+                          </div>
 
-                        <div className="shrink-0 text-right">
-                          <div>{product.owner_name ?? "Unknown user"}</div>
-                          <div className="opacity-75">qty {product.quantity}</div>
-                        </div>
-                      </Link>
+                          <div className="shrink-0 text-right opacity-75">
+                            qty {product.quantity}
+                          </div>
+                        </Link>
+                      );
+                    })
+                  ) : (
+                    <div className="text-xs opacity-75">
+                      No booster packs collected yet.
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
-            )}
+
+              {sealedBoosterTrades.length > 0 && (
+                <div>
+                  <div className="text-sm font-bold">
+                    Booster packs others have
+                  </div>
+
+                  <div className="mt-2 max-h-64 overflow-y-auto pr-4">
+                    {sealedBoosterTrades.slice(0, 20).map((product) => {
+                      const image =
+                        product.images?.find((sealedImage) => sealedImage.type === "front")?.small ??
+                        product.images?.[0]?.small ??
+                        product.images?.[0]?.medium ??
+                        product.images?.[0]?.large ??
+                        "/placeholder_card.png";
+
+                      return (
+                        <Link
+                          key={`${product.owner_id}-${product.sealed_id}`}
+                          href={`/${lang}/sealed/${product.sealed_id}`}
+                          className="mb-2 flex items-center justify-between gap-3 border-b border-white/25 pb-2 text-xs hover:underline hover:underline-offset-4"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <Image
+                              src={image}
+                              alt={product.sealed_name}
+                              width={48}
+                              height={48}
+                              className="h-12 w-12 shrink-0 object-contain"
+                            />
+
+                            <span className="truncate font-semibold">
+                              {product.sealed_name}
+                            </span>
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <div>{product.owner_name ?? "Unknown user"}</div>
+                            <div className="opacity-75">qty {product.quantity}</div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

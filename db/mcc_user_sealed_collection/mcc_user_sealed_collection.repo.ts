@@ -155,3 +155,42 @@ export async function fetchSealedBoosterTradeCandidates(
 
   return result.rows;
 }
+
+export async function fetchLatestOwnedSealedBoosters(
+  userId: string,
+  lang: string
+) {
+  const safeLang = normalizeLanguage(lang);
+
+  const result = await db.query(
+    `
+    SELECT
+      sealed.id AS sealed_id,
+      sealed.name AS sealed_name,
+      sealed.images,
+      sealed.expansion,
+      uc.quantity,
+      uc.updated_at
+    FROM mcc_user_sealed_collection uc
+
+    INNER JOIN mcc_sealed sealed
+      ON sealed.id = uc.sealed_id
+
+    WHERE uc.user_id = $1
+      AND sealed.language_code = $2
+      AND sealed.type = 'Booster Pack'
+      AND (
+        sealed.name = (sealed.expansion->>'name') || ' Booster Pack'
+        OR sealed.name = 'Base Set Booster Pack'
+      )
+
+    ORDER BY
+      uc.updated_at DESC,
+      sealed.name
+    LIMIT 5
+    `,
+    [userId, safeLang.toUpperCase()]
+  );
+
+  return result.rows;
+}
