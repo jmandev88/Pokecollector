@@ -6,7 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 
 type SealedImage = {
   type: string;
@@ -46,12 +45,10 @@ export default async function Sealed({
 
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id) {
-    redirect("/en");
-  }
-
   const groupedSealed = (await fetchSealedGrouped(lang)) as GroupedSealed;
-  const collection = await fetchUserSealedCollection(session.user.id);
+  const collection = session?.user?.id
+    ? await fetchUserSealedCollection(session.user.id)
+    : [];
   const collectionMap = Object.fromEntries(
     collection.map((product) => [
       product.sealed_id,
@@ -134,10 +131,12 @@ export default async function Sealed({
                         </div>
                       </Link>
 
-                      <SealedQuantityControls
-                        sealedId={product.id}
-                        quantity={collectionMap[product.id] ?? 0}
-                      />
+                      {session?.user?.id && (
+                        <SealedQuantityControls
+                          sealedId={product.id}
+                          quantity={collectionMap[product.id] ?? 0}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}

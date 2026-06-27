@@ -2,9 +2,6 @@ import Header from "@/app/components/layout/Header/Header";
 import { fetchSet, fetchSetsGrouped } from "@/db/mcc_sets/mcc_sets.repo";
 import Image from "next/image";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 
 type SetItem = {
   id: string | number;
@@ -24,12 +21,6 @@ export default async function Sets({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
-
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    redirect("/en");
-  }
 
   const groupedSets = (await fetchSetsGrouped(lang)) as GroupedSets;
 

@@ -6,7 +6,6 @@ import { fetchUserCollection } from "@/db/mcc_user_collection/mcc_user_collectio
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 
 export default async function Sets({
   params,
@@ -19,10 +18,6 @@ export default async function Sets({
 
   
     const session = await getServerSession(authOptions);
-  
-    if (!session?.user?.id) {
-      redirect("/en");
-    }
 
   let collectionMap: Record<string, number> = {};
 
@@ -49,6 +44,7 @@ export default async function Sets({
                 key={card.id + card.variant_id}
                 card={card}
                 quantity={collectionMap[card.variant_id] ?? 0}
+                showCollectionControls={!!session?.user?.id}
               />
             ))
           ) : (

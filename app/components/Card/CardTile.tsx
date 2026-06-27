@@ -26,11 +26,13 @@ type CardTileProps = {
     }[];
   };
   quantity?: number;
+  showCollectionControls?: boolean;
 };
 
 export default function CardTile({
   card,
   quantity = 0,
+  showCollectionControls = true,
 }: CardTileProps) {
   const image =
     card.variant_images?.find((img) => img.type === "front")?.medium ??
@@ -48,10 +50,12 @@ export default function CardTile({
       />
       
       <div className="text-xs pt-4 mb-4 ">
+        {showCollectionControls && (
             <CardQuantityControls
                 variantId={card.variant_id}
                 quantity={quantity}
             />
+        )}
 
         <div className="mt-4">
         <div className="whitespace-nowrap overflow-hidden text-ellipsis">
