@@ -34,6 +34,12 @@ type SealedBoosterTradeCandidate = {
   owner_name: string | null;
   sealed_id: string;
   sealed_name: string;
+  images?: {
+    type: string;
+    small?: string;
+    medium?: string;
+    large?: string;
+  }[];
   quantity: number;
 };
 
@@ -211,21 +217,38 @@ const tradesBySet = groupTradesBySet(trades);
 
                 <div className="mt-2 max-h-64 overflow-y-auto pr-4">
                   {sealedBoosterTrades.slice(0, 20).map((product) => (
-                    <div
-                      key={`${product.owner_id}-${product.sealed_id}`}
-                      className="mb-2 flex justify-between border-b border-white/25 pb-2 text-xs"
-                    >
+                    <div key={`${product.owner_id}-${product.sealed_id}`}>
                       <Link
                         href={`/${lang}/sealed/${product.sealed_id}`}
-                        className="font-semibold hover:underline hover:underline-offset-4"
+                        className="mb-2 flex items-center justify-between gap-3 border-b border-white/25 pb-2 text-xs hover:underline hover:underline-offset-4"
                       >
-                        {product.sealed_name}
-                      </Link>
+                        <div className="flex min-w-0 items-center gap-3">
+                          {product.images?.[0] && (
+                            <Image
+                              src={
+                                product.images.find((image) => image.type === "front")?.small ??
+                                product.images[0].small ??
+                                product.images[0].medium ??
+                                product.images[0].large ??
+                                "/placeholder_card.png"
+                              }
+                              alt={product.sealed_name}
+                              width={48}
+                              height={48}
+                              className="h-12 w-12 shrink-0 object-contain"
+                            />
+                          )}
 
-                      <div className="text-right">
-                        <div>{product.owner_name ?? "Unknown user"}</div>
-                        <div className="opacity-75">qty {product.quantity}</div>
-                      </div>
+                          <span className="truncate font-semibold">
+                            {product.sealed_name}
+                          </span>
+                        </div>
+
+                        <div className="shrink-0 text-right">
+                          <div>{product.owner_name ?? "Unknown user"}</div>
+                          <div className="opacity-75">qty {product.quantity}</div>
+                        </div>
+                      </Link>
                     </div>
                   ))}
                 </div>
