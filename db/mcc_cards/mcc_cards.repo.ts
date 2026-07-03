@@ -98,6 +98,22 @@ export async function fetchCardsByType(lang: string, type: string) {
   return result.rows || null;
 }
 
+export async function fetchCardsByStamp(lang: string, stamp: string) {
+  const safeLang = normalizeLanguage(lang);
+
+  const result = await db.query(
+    `
+    ${CARD_SELECT}
+    WHERE c.language_code = $1
+      AND v.name = $2
+  ${CARD_ORDER}
+    `,
+    [safeLang.toUpperCase(), decodeURIComponent(stamp)]
+  );
+
+  return result.rows || null;
+}
+
 export async function fetchCardCount(lang: string) {
   const safeLang = normalizeLanguage(lang);
 
@@ -181,6 +197,30 @@ export async function fetchCardCountByType(lang: string) {
         ON variant_counts.card_id = cards_by_type.id
     GROUP BY card_type
     ORDER BY collectible_count DESC;
+    `,
+    [safeLang.toUpperCase()]
+  );
+
+  return result.rows;
+}
+
+export async function fetchCardCountByStamp(lang: string) {
+  const safeLang = normalizeLanguage(lang);
+
+  const result = await db.query(
+    `
+    SELECT
+        v.name AS stamp,
+        COUNT(DISTINCT c.id) AS card_count,
+        COUNT(v.id) AS collectible_count
+    FROM mcc_card_variants v
+    INNER JOIN mcc_cards c
+        ON c.id = v.card_id
+    WHERE c.language_code = $1
+      AND v.name IS NOT NULL
+      AND v.name != ''
+    GROUP BY v.name
+    ORDER BY collectible_count DESC, v.name;
     `,
     [safeLang.toUpperCase()]
   );

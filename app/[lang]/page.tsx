@@ -1,5 +1,5 @@
 import Header from "@/app/components/layout/Header/Header";
-import { fetchCardCount, fetchCardCountByRarity, fetchCardCountByType, fetchCardCountByPokedexNumber } from "@/db/mcc_cards/mcc_cards.repo";
+import { fetchCardCount, fetchCardCountByRarity, fetchCardCountByType, fetchCardCountByPokedexNumber, fetchCardCountByStamp } from "@/db/mcc_cards/mcc_cards.repo";
 import { fetchSetCount } from "@/db/mcc_sets/mcc_sets.repo";
 import { fetchSealedCount } from "@/db/mcc_sealed/mcc_sealed.repo";
 import { fetchCardVariantsCount } from "@/db/mcc_card_variants/mcc_card_variants.repo";
@@ -15,6 +15,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { formatVariantName } from "../utils/formatVariantName";
+import { normalizeStampName } from "../utils/normalizeStampName";
 import { groupTradesBySet } from "../utils/groupTradesBySet";
 import { fetchTradeCandidates } from "@/db/mcc_user_collection/mcc_user_collection.repo";
 import {
@@ -64,6 +65,7 @@ export default async function Sets({params,}: {params: Promise<{ lang: string }>
   const cardCountByRarity = await fetchCardCountByRarity(lang);
   const cardCountByType = await fetchCardCountByType(lang);
   const cardCountByPokedexNumber = await fetchCardCountByPokedexNumber(lang);
+  const cardCountByStamp = await fetchCardCountByStamp(lang);
 
   let setsWithStats: any[] = [];
   let sealedBoosterStats: SealedBoosterStats | null = null;
@@ -139,6 +141,17 @@ const tradesBySet = groupTradesBySet(trades);
                 <Link href={`/${lang}/pokedex/${pokedex.pokedex_number}`} key={pokedex.pokedex_number} className="flex justify-between items-center group">
                   <span className="text-lg font-semibold group-hover:underline group-hover:underline-offset-4">#{pokedex.pokedex_number} {getPokemonName(pokedex.pokedex_number)}</span>
                   <span className="text-sm">{formatCount(pokedex.card_count)} cards, {formatCount(pokedex.collectible_count)} collectibles</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl pb-4 mb-4 border-b border-white/25">Stamp</div>
+            <div className="max-h-64 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+              {cardCountByStamp.map((stamp) => (
+                <Link href={`/${lang}/stamp/${encodeURIComponent(stamp.stamp)}`} key={stamp.stamp} className="flex justify-between items-center group">
+                  <span className="text-lg font-semibold group-hover:underline group-hover:underline-offset-4">{normalizeStampName(stamp.stamp)}</span>
+                  <span className="text-sm">{formatCount(stamp.card_count)} cards, {formatCount(stamp.collectible_count)} collectibles</span>
                 </Link>
               ))}
             </div>
