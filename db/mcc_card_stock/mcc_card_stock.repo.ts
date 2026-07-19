@@ -425,14 +425,24 @@ export async function fetchVaultStockArrivals(lang: string, limit = 8) {
       stock.quantity AS stock_quantity,
       stock.price AS stock_price,
       stock.last_added_at,
-      COALESCE(stock_lots.condition_count, 0)::int AS stock_condition_count
+      COALESCE(stock_lots.condition_count, 0)::int AS stock_condition_count,
+      COALESCE(stock_lots.lots, '[]'::jsonb) AS stock_lots
     FROM mcc_card_stock stock
     INNER JOIN mcc_card_variants v
       ON v.id = stock.variant_id
     INNER JOIN mcc_cards c
       ON c.id = v.card_id
     LEFT JOIN LATERAL (
-      SELECT COUNT(*) AS condition_count
+      SELECT
+        COUNT(*) AS condition_count,
+        jsonb_agg(
+          jsonb_build_object(
+            'condition', lot.condition,
+            'quantity', lot.quantity,
+            'price', lot.price
+          )
+          ORDER BY array_position($3::text[], lot.condition)
+        ) AS lots
       FROM mcc_card_stock_lots lot
       WHERE lot.variant_id = stock.variant_id
         AND lot.quantity > 0
@@ -443,7 +453,11 @@ export async function fetchVaultStockArrivals(lang: string, limit = 8) {
     ORDER BY stock.last_added_at DESC
     LIMIT $2
     `,
-    [safeLang.toUpperCase(), limit]
+    [
+      safeLang.toUpperCase(),
+      limit,
+      CARD_STOCK_CONDITIONS.map((condition) => condition.value),
+    ]
   );
 
   return result.rows;

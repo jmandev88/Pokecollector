@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { signIn, useSession } from "next-auth/react";
 import CardTile from "@/app/components/Card/CardTile";
-import VaultCardModal from "@/app/components/Vault/VaultCardModal";
+import VaultCardModal, {
+  VaultCartLot,
+} from "@/app/components/Vault/VaultCardModal";
+import { CARD_STOCK_CONDITIONS } from "@/app/config/cardStock";
 import {
   decrementCollection,
   incrementCollection,
@@ -55,6 +58,21 @@ type VaultCard = {
   variant_prices?: unknown;
   stock_quantity?: number | string | null;
   stock_condition_count?: number | string | null;
+  stock_lots?: {
+    condition: string;
+    quantity: number;
+    price?: string | null;
+  }[];
+};
+
+type CartItem = {
+  key: string;
+  variantId: string;
+  title: string;
+  condition: string;
+  price: string;
+  quantity: number;
+  maxQuantity: number;
 };
 
 type VaultDashboardProps = {
@@ -71,6 +89,44 @@ type VaultDashboardProps = {
     sealedCount: number | string;
   };
 };
+
+const CART_SESSION_STORAGE_KEY = "mcc-vault-basket";
+
+function isCartItem(value: unknown): value is CartItem {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const item = value as Record<string, unknown>;
+
+  return (
+    typeof item.key === "string" &&
+    typeof item.variantId === "string" &&
+    typeof item.title === "string" &&
+    typeof item.condition === "string" &&
+    typeof item.price === "string" &&
+    typeof item.quantity === "number" &&
+    typeof item.maxQuantity === "number" &&
+    item.quantity > 0 &&
+    item.maxQuantity > 0
+  );
+}
+
+function readSessionCartItems() {
+  try {
+    const savedCart = window.sessionStorage.getItem(CART_SESSION_STORAGE_KEY);
+
+    if (!savedCart) {
+      return [];
+    }
+
+    const parsedCart: unknown = JSON.parse(savedCart);
+
+    return Array.isArray(parsedCart) ? parsedCart.filter(isCartItem) : [];
+  } catch {
+    return [];
+  }
+}
 
 function priceFor(card: VaultCard) {
   return card.listing_price ?? "Price pending";
@@ -93,6 +149,25 @@ function stockNoticeFor(card: VaultCard) {
   }
 
   return `${quantity} in stock`;
+}
+
+function conditionLabel(condition: string) {
+  return (
+    CARD_STOCK_CONDITIONS.find((option) => option.value === condition)?.label ??
+    condition
+  );
+}
+
+function cartLotKey({
+  variantId,
+  condition,
+  price,
+}: {
+  variantId: string;
+  condition: string;
+  price: string;
+}) {
+  return `${variantId}:${condition}:${price}`;
 }
 
 function SidebarLink({
@@ -126,6 +201,9 @@ export default function VaultDashboard({
 }: VaultDashboardProps) {
   const { data: session } = useSession();
   const [selectedCard, setSelectedCard] = useState<VaultCard | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [hasLoadedCartSession, setHasLoadedCartSession] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [localQuantities, setLocalQuantities] = useState(() =>
     Object.fromEntries(
       ownedVariants.map((variant) => [variant.variantId, variant.quantity])
@@ -133,6 +211,22 @@ export default function VaultDashboard({
   );
   const [isPending, startTransition] = useTransition();
   const featuredCards = cards.slice(0, 8);
+
+  useEffect(() => {
+    setCartItems(readSessionCartItems());
+    setHasLoadedCartSession(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedCartSession) {
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      CART_SESSION_STORAGE_KEY,
+      JSON.stringify(cartItems)
+    );
+  }, [cartItems, hasLoadedCartSession]);
 
   const selectedQuantity = useMemo(
     () => (selectedCard ? localQuantities[selectedCard.variant_id] ?? 0 : 0),
@@ -215,6 +309,121 @@ export default function VaultDashboard({
     });
   };
 
+  const handleAddToCart = (
+    card: VaultCard,
+    lot: VaultCartLot,
+    quantity: number,
+    openCart = true
+  ) => {
+    const title = card.listing_title ?? card.card_name;
+    const price = lot.price ?? card.listing_price ?? "Price pending";
+    const key = cartLotKey({
+      variantId: card.variant_id,
+      condition: lot.condition,
+      price,
+    });
+    const maxQuantity = Number(lot.quantity ?? 0);
+
+    setCartItems((current) => {
+      const existingItem = current.find((item) => item.key === key);
+      const currentQuantity = existingItem?.quantity ?? 0;
+      const quantityToAdd = Math.min(
+        Math.max(quantity, 0),
+        Math.max(maxQuantity - currentQuantity, 0)
+      );
+
+      if (quantityToAdd <= 0) {
+        return current;
+      }
+
+      if (existingItem) {
+        return current.map((item) =>
+          item.key === key
+            ? {
+                ...item,
+                quantity: Math.min(item.quantity + quantityToAdd, maxQuantity),
+                maxQuantity,
+              }
+            : item
+        );
+      }
+
+      return [
+        ...current,
+        {
+          key,
+          variantId: card.variant_id,
+          title,
+          condition: lot.condition,
+          price,
+          quantity: quantityToAdd,
+          maxQuantity,
+        },
+      ];
+    });
+    if (openCart) {
+      setIsCartOpen(true);
+    }
+  };
+
+  const handleRemoveFromCart = (
+    card: VaultCard,
+    lot: VaultCartLot,
+    quantity = 1
+  ) => {
+    const price = lot.price ?? card.listing_price ?? "Price pending";
+    const key = cartLotKey({
+      variantId: card.variant_id,
+      condition: lot.condition,
+      price,
+    });
+
+    setCartItems((current) =>
+      current.flatMap((item) => {
+        if (item.key !== key) {
+          return [item];
+        }
+
+        const nextQuantity = item.quantity - Math.max(quantity, 1);
+
+        return nextQuantity > 0 ? [{ ...item, quantity: nextQuantity }] : [];
+      })
+    );
+  };
+
+  const handleRemoveCartItem = (key: string) => {
+    setCartItems((current) => current.filter((item) => item.key !== key));
+  };
+
+  const handleDecrementCartItem = (key: string) => {
+    setCartItems((current) =>
+      current.flatMap((item) => {
+        if (item.key !== key) {
+          return [item];
+        }
+
+        const nextQuantity = item.quantity - 1;
+
+        return nextQuantity > 0 ? [{ ...item, quantity: nextQuantity }] : [];
+      })
+    );
+  };
+
+  const cartQuantity = cartItems.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+  const selectedCardCartQuantities = selectedCard
+    ? Object.fromEntries(
+        cartItems
+          .filter((item) => item.variantId === selectedCard.variant_id)
+          .map((item) => [
+            `${item.condition}:${item.price}`,
+            item.quantity,
+          ])
+      )
+    : {};
+
   return (
     <div className="min-h-screen bg-[#fff8f6] text-[#2c1715]">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[60px] flex-col items-center border-r border-[#f2d9d4] bg-[#fff0ed] py-5 md:flex">
@@ -284,6 +493,19 @@ export default function VaultDashboard({
               <span className="text-sm">Search the vault...</span>
             </div>
             <VaultLanguageSelector lang={lang} />
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#fff0ed] text-[#cf160f] ring-1 ring-[#f0d4cf] transition hover:bg-[#ffe2dc]"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                shopping_basket
+              </span>
+              {cartQuantity > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#cf160f] px-1 text-[10px] font-black text-white">
+                  {cartQuantity}
+                </span>
+              )}
+            </button>
             <span className="material-symbols-outlined text-[23px] text-[#6f4d47]">
               notifications
             </span>
@@ -326,12 +548,11 @@ export default function VaultDashboard({
                   images: card.images,
                 }}
                 quantity={localQuantities[card.variant_id] ?? 0}
-                showCollectionControls={!!session?.user?.id}
+                showCollectionControls={false}
                 variant="vault"
                 marketPrice={priceFor(card)}
                 stockNotice={stockNoticeFor(card)}
                 onSelect={() => setSelectedCard(card)}
-                onQuantityChange={handleQuantityChange}
               />
             ))}
           </section>
@@ -362,7 +583,104 @@ export default function VaultDashboard({
           onClose={() => setSelectedCard(null)}
           onIncrement={handleIncrementCollection}
           onDecrement={handleDecrementCollection}
+          cartQuantities={selectedCardCartQuantities}
+          onAddToCart={(lot, quantity) =>
+            handleAddToCart(selectedCard, lot, quantity, false)
+          }
+          onRemoveFromCart={(lot, quantity) =>
+            handleRemoveFromCart(selectedCard, lot, quantity)
+          }
         />
+      )}
+
+      {isCartOpen && (
+        <div
+          onClick={() => setIsCartOpen(false)}
+          className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-sm"
+        >
+          <aside
+            onClick={(event) => event.stopPropagation()}
+            className="flex h-full w-full max-w-[420px] flex-col bg-[#fff8f6] shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-[#f3dfdb] px-5 py-5">
+              <div>
+                <h3 className="text-lg font-black text-[#2c1715]">Basket</h3>
+                <div className="mt-1 text-xs font-semibold text-[#704f49]">
+                  {cartQuantity.toLocaleString("en-GB")} item
+                  {cartQuantity === 1 ? "" : "s"}
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0ed] text-[#2c1715] transition hover:bg-[#ffe2dc]"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  close
+                </span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {cartItems.length > 0 ? (
+                <div className="grid gap-3">
+                  {cartItems.map((item) => (
+                    <div
+                      key={item.key}
+                      className="rounded-xl border border-[#f3dfdb] bg-white/75 p-4 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-black text-[#2c1715]">
+                            {item.title}
+                          </div>
+                          <div className="mt-1 text-[10px] font-black uppercase text-[#704f49]">
+                            {conditionLabel(item.condition)}
+                          </div>
+                        </div>
+                        <div className="text-right text-sm font-black text-[#cf160f]">
+                          {item.price}
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#704f49]">
+                        <span>Quantity</span>
+                        <span>
+                          x{item.quantity} / {item.maxQuantity}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleDecrementCartItem(item.key)}
+                          className="rounded-md border border-[#f0b9b1] bg-white px-3 py-2 text-[10px] font-black uppercase text-[#cf160f] transition hover:bg-[#fff2ef]"
+                        >
+                          Remove 1
+                        </button>
+                        <button
+                          onClick={() => handleRemoveCartItem(item.key)}
+                          className="rounded-md bg-[#fff0ed] px-3 py-2 text-[10px] font-black uppercase text-[#704f49] transition hover:bg-[#ffe2dc]"
+                        >
+                          Remove All
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-[#f3dfdb] bg-white/70 p-6 text-sm font-semibold text-[#704f49]">
+                  Your basket is empty.
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-[#f3dfdb] p-5">
+              <button
+                disabled
+                className="h-11 w-full rounded-lg bg-[#cf160f] text-xs font-black uppercase text-white opacity-60"
+              >
+                Checkout coming soon
+              </button>
+            </div>
+          </aside>
+        </div>
       )}
     </div>
   );

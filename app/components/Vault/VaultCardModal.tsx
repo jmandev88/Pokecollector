@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { CARD_STOCK_CONDITIONS } from "@/app/config/cardStock";
 import { normalizeStampName } from "@/app/utils/normalizeStampName";
 
 type VaultModalImage = {
@@ -43,7 +45,22 @@ export type VaultModalCard = {
   variant_id: string;
   variant_name?: string | null;
   variant_images?: VaultModalImage[];
+  stock_lots?: {
+    condition: string;
+    quantity: number;
+    price?: string | null;
+  }[];
 };
+
+export type VaultCartLot = {
+  condition: string;
+  quantity: number;
+  price?: string | null;
+};
+
+function cartLotKey(lot: VaultCartLot, fallbackPrice?: string | null) {
+  return `${lot.condition}:${lot.price ?? fallbackPrice ?? "Price pending"}`;
+}
 
 function imageFor(card: VaultModalCard) {
   return (
@@ -177,6 +194,9 @@ export default function VaultCardModal({
   onClose,
   onIncrement,
   onDecrement,
+  onAddToCart,
+  onRemoveFromCart,
+  cartQuantities,
 }: {
   lang: string;
   card: VaultModalCard;
@@ -187,11 +207,37 @@ export default function VaultCardModal({
   onClose: () => void;
   onIncrement: () => void;
   onDecrement: () => void;
+  onAddToCart?: (lot: VaultCartLot, quantity: number) => void;
+  onRemoveFromCart?: (lot: VaultCartLot, quantity?: number) => void;
+  cartQuantities?: Record<string, number>;
 }) {
   const variantLabel = card.variant_name
     ? normalizeStampName(card.variant_name)
     : "Standard";
   const setLabel = card.expansion?.name ?? card.expansion_id ?? "Unknown Set";
+  const stockedLots = (card.stock_lots ?? []).filter(
+    (lot) => Number(lot.quantity ?? 0) > 0
+  );
+  const [selectedCondition, setSelectedCondition] = useState(
+    stockedLots[0]?.condition ?? ""
+  );
+  const selectedLot = stockedLots.find(
+    (lot) => lot.condition === selectedCondition
+  );
+  const selectedLotCartQuantity = selectedLot
+    ? cartQuantities?.[cartLotKey(selectedLot, price)] ?? 0
+    : 0;
+  const selectedLotRemaining = selectedLot
+    ? Math.max(Number(selectedLot.quantity ?? 0) - selectedLotCartQuantity, 0)
+    : 0;
+  const selectedLotAvailableLabel =
+    selectedLotRemaining === 1
+      ? "1 available"
+      : `${selectedLotRemaining.toLocaleString("en-GB")} available`;
+
+  const conditionLabel = (condition: string) =>
+    CARD_STOCK_CONDITIONS.find((option) => option.value === condition)?.label ??
+    condition;
 
   return (
     <div
@@ -226,28 +272,92 @@ export default function VaultCardModal({
             </button>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <div className="inline-flex items-center overflow-hidden rounded-lg border border-[#efcbc4] bg-white">
-              <button
-                disabled={isPending || quantity <= 0}
-                onClick={onDecrement}
-                className="flex h-9 w-10 items-center justify-center bg-[#fff2ef] text-base font-black text-[#cf160f] disabled:cursor-not-allowed disabled:opacity-35"
-              >
-                -
-              </button>
-              <div className="flex h-9 min-w-12 items-center justify-center px-3 text-sm font-black">
-                {quantity}
+          <div className="mt-3 flex flex-col gap-3">
+            <div className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-xl border border-[#d7e5f8] bg-white/60 p-2">
+              <span className="px-1 text-[9px] font-black uppercase text-[#4f617c]">
+                Collection
+              </span>
+              <div className="inline-flex items-center overflow-hidden rounded-lg border border-[#cad9ee] bg-white">
+                <button
+                  disabled={isPending || quantity <= 0}
+                  onClick={onDecrement}
+                  className="flex h-9 w-10 items-center justify-center bg-[#eef5ff] text-base font-black text-[#2463a8] disabled:cursor-not-allowed disabled:opacity-35"
+                >
+                  -
+                </button>
+                <div className="flex h-9 min-w-12 items-center justify-center px-3 text-sm font-black">
+                  {quantity}
+                </div>
+                <button
+                  disabled={isPending}
+                  onClick={onIncrement}
+                  className="flex h-9 w-10 items-center justify-center bg-[#2463a8] text-base font-black text-white disabled:opacity-60"
+                >
+                  +
+                </button>
               </div>
               <button
                 disabled={isPending}
                 onClick={onIncrement}
-                className="flex h-9 w-10 items-center justify-center bg-[#cf160f] text-base font-black text-white disabled:opacity-60"
+                className="h-9 rounded-lg bg-[#2463a8] px-4 text-xs font-black uppercase text-white transition hover:bg-[#1c4f86] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                +
+                Add to Collection
               </button>
             </div>
 
-            <div className="ml-auto inline-flex items-center gap-3">
+            {onAddToCart &&
+              (selectedLot ? (
+                <div className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-xl border border-[#f3d4ce] bg-white/60 p-2">
+                  <span className="px-1 text-[9px] font-black uppercase text-[#704f49]">
+                    Buy stock
+                  </span>
+                  <select
+                    value={selectedCondition}
+                    onChange={(event) => setSelectedCondition(event.target.value)}
+                    className="h-9 rounded-lg border border-[#efcbc4] bg-white px-3 text-xs font-black text-[#2c1715] outline-none"
+                  >
+                    {stockedLots.map((lot) => (
+                      <option value={lot.condition} key={lot.condition}>
+                        {conditionLabel(lot.condition)}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="inline-flex items-center overflow-hidden rounded-lg border border-[#efcbc4] bg-white">
+                    <button
+                      disabled={selectedLotCartQuantity <= 0}
+                      onClick={() => onRemoveFromCart?.(selectedLot, 1)}
+                      className="flex h-9 w-10 items-center justify-center bg-[#fff2ef] text-base font-black text-[#cf160f] disabled:cursor-not-allowed disabled:opacity-35"
+                    >
+                      -
+                    </button>
+                    <div className="flex h-9 min-w-12 items-center justify-center px-3 text-sm font-black">
+                      {selectedLotCartQuantity}
+                    </div>
+                    <button
+                      disabled={selectedLotRemaining <= 0}
+                      onClick={() => onAddToCart(selectedLot, 1)}
+                      className="flex h-9 w-10 items-center justify-center bg-[#cf160f] text-base font-black text-white disabled:cursor-not-allowed disabled:opacity-35"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-[#704f49]">
+                    {selectedLotAvailableLabel}
+                  </span>
+                  {selectedLotCartQuantity > 0 && (
+                    <span className="text-[10px] font-black uppercase text-[#cf160f]">
+                      {selectedLotCartQuantity} in basket
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="w-fit max-w-full rounded-xl border border-[#f3d4ce] bg-white/60 px-3 py-2 text-[10px] font-black uppercase text-[#704f49]">
+                  No stock available
+                </div>
+              ))}
+
+            <div className="inline-flex items-center gap-3 self-end">
               <Link
                 href={`/${lang}/sets/${card.expansion_id ?? ""}`}
                 className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[#cf160f] px-4 text-xs font-black text-white transition hover:bg-[#a9110c]"
@@ -403,6 +513,60 @@ export default function VaultCardModal({
               </div>
             </div>
           </div>
+
+          {stockedLots.length > 0 && (
+            <div className="mt-4 rounded-xl bg-white/55 p-3">
+              <div className="mb-3 text-[9px] font-black uppercase text-[#704f49]">
+                Available Stock
+              </div>
+              <div className="grid gap-2">
+                {stockedLots.map((lot) => {
+                  const cartQuantity =
+                    cartQuantities?.[cartLotKey(lot, price)] ?? 0;
+                  const remainingQuantity = Math.max(
+                    Number(lot.quantity ?? 0) - cartQuantity,
+                    0
+                  );
+
+                  return (
+                    <div
+                      key={lot.condition}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-[#f3dfdb] bg-white px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-xs font-black text-[#2c1715]">
+                          {conditionLabel(lot.condition)}
+                        </div>
+                        <div className="mt-0.5 text-[10px] font-semibold text-[#704f49]">
+                          {remainingQuantity} remaining ·{" "}
+                          {lot.price ?? price ?? "Price pending"}
+                        </div>
+                      </div>
+                      {onAddToCart && (
+                        <div className="flex shrink-0 items-center gap-2">
+                          {cartQuantity > 0 && (
+                            <button
+                              onClick={() => onRemoveFromCart?.(lot, 1)}
+                              className="rounded-md border border-[#f0b9b1] bg-white px-3 py-2 text-[10px] font-black uppercase text-[#cf160f] transition hover:bg-[#fff2ef]"
+                            >
+                              Remove
+                            </button>
+                          )}
+                          <button
+                            disabled={remainingQuantity <= 0}
+                            onClick={() => onAddToCart(lot, 1)}
+                            className="rounded-md bg-[#cf160f] px-3 py-2 text-[10px] font-black uppercase text-white transition hover:bg-[#a9110c] disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {remainingQuantity <= 0 ? "Max" : "Add"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
         </div>
       </div>
