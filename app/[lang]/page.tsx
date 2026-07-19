@@ -1,9 +1,5 @@
 import VaultDashboard from "@/app/components/Vault/VaultDashboard";
-import stitchVaultListings from "@/app/data/stitchVaultListings.json";
-import {
-  fetchCardCount,
-  fetchVaultMarketplaceArrivals,
-} from "@/db/mcc_cards/mcc_cards.repo";
+import { fetchCardCount } from "@/db/mcc_cards/mcc_cards.repo";
 import { fetchVaultStockArrivals } from "@/db/mcc_card_stock/mcc_card_stock.repo";
 import { fetchCardVariantsCount } from "@/db/mcc_card_variants/mcc_card_variants.repo";
 import { fetchSealedCount } from "@/db/mcc_sealed/mcc_sealed.repo";
@@ -21,30 +17,20 @@ export default async function Dashboard({
   const session = await getServerSession(authOptions);
 
   const [
-    stockCards,
-    marketplaceCards,
+    cards,
     cardCount,
     cardVariantsCount,
     setCount,
     sealedCount,
     collection,
   ] = await Promise.all([
-    fetchVaultStockArrivals(lang, stitchVaultListings),
-    fetchVaultMarketplaceArrivals(lang, stitchVaultListings),
+    fetchVaultStockArrivals(lang),
     fetchCardCount(lang),
     fetchCardVariantsCount(lang),
     fetchSetCount(lang),
     fetchSealedCount(lang),
     session?.user?.id ? fetchUserCollection(session.user.id) : [],
   ]);
-  const cards = [...stockCards, ...marketplaceCards]
-    .filter(
-      (card, index, allCards) =>
-        allCards.findIndex(
-          (candidate) => candidate.variant_id === card.variant_id
-        ) === index
-    )
-    .slice(0, 8);
 
   return (
     <VaultDashboard

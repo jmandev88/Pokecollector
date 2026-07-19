@@ -1,6 +1,6 @@
 import SealedQuantityControls from "@/app/components/Sealed/SealedQuantityControls";
 import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
-import { ADMIN_USER_ID } from "@/app/config/admin";
+import { isAdminUser } from "@/app/config/admin";
 import { fetchSealedGrouped } from "@/db/mcc_sealed/mcc_sealed.repo";
 import { fetchUserSealedCollection } from "@/db/mcc_user_sealed_collection/mcc_user_sealed_collection.repo";
 import { authOptions } from "@/lib/auth";
@@ -98,7 +98,7 @@ export default async function Sealed({
 }) {
   const { lang } = await params;
   const session = await getServerSession(authOptions);
-  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
+  const showAdminNav = isAdminUser(session?.user?.id);
   const groupedSealed = (await fetchSealedGrouped(lang)) as GroupedSealed;
   const collection = session?.user?.id
     ? await fetchUserSealedCollection(session.user.id)

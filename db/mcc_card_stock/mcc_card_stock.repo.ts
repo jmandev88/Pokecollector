@@ -218,51 +218,19 @@ export async function setCardStockPrice(variantId: string, price: string) {
   );
 }
 
-type VaultStockListing = {
-  display_order: number;
-  expansion_id: string;
-  number: string;
-  variant_id?: string | null;
-  variant_name?: string | null;
-  title: string;
-  condition: string;
-  seller: string;
-  price: string;
-  market_trend?: string | null;
-};
-
-export async function fetchVaultStockArrivals(
-  lang: string,
-  listings: VaultStockListing[],
-  limit = 8
-) {
+export async function fetchVaultStockArrivals(lang: string, limit = 8) {
   await ensureCardStockTable();
 
   const safeLang = normalizeLanguage(lang);
 
   const result = await db.query(
     `
-    WITH listings AS (
-      SELECT *
-      FROM jsonb_to_recordset($2::jsonb) AS listing(
-        display_order int,
-        expansion_id text,
-        number text,
-        variant_id text,
-        variant_name text,
-        title text,
-        condition text,
-        seller text,
-        price text,
-        market_trend text
-      )
-    )
     SELECT
-      listing.title AS listing_title,
-      listing.condition AS listing_condition,
-      listing.seller AS listing_seller,
-      COALESCE(stock.price, listing.price) AS listing_price,
-      listing.market_trend AS listing_market_trend,
+      c.name AS listing_title,
+      NULL::text AS listing_condition,
+      NULL::text AS listing_seller,
+      stock.price AS listing_price,
+      NULL::text AS listing_market_trend,
 
       c.id AS card_id,
       c.name AS card_name,
@@ -299,41 +267,13 @@ export async function fetchVaultStockArrivals(
       ON v.id = stock.variant_id
     INNER JOIN mcc_cards c
       ON c.id = v.card_id
-    LEFT JOIN LATERAL (
-      SELECT *
-      FROM listings listing
-      WHERE (
-        listing.variant_id IS NOT NULL
-        AND listing.variant_id != ''
-        AND listing.variant_id = v.id::text
-      )
-      OR (
-        listing.expansion_id = c.expansion_id
-        AND listing.number = c.number
-        AND (
-          listing.variant_name IS NULL
-          OR listing.variant_name = ''
-          OR listing.variant_name = v.name
-        )
-      )
-      ORDER BY
-        CASE
-          WHEN listing.variant_id IS NOT NULL
-            AND listing.variant_id != ''
-            AND listing.variant_id = v.id::text
-          THEN 0
-          ELSE 1
-        END,
-        listing.display_order
-      LIMIT 1
-    ) listing ON true
     WHERE c.language_code = $1
       AND stock.quantity > 0
       AND stock.last_added_at IS NOT NULL
     ORDER BY stock.last_added_at DESC
-    LIMIT $3
+    LIMIT $2
     `,
-    [safeLang.toUpperCase(), JSON.stringify(listings), limit]
+    [safeLang.toUpperCase(), limit]
   );
 
   return result.rows;

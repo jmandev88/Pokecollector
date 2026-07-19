@@ -1,6 +1,6 @@
 import { fetchSetsGrouped } from "@/db/mcc_sets/mcc_sets.repo";
 import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
-import { ADMIN_USER_ID } from "@/app/config/admin";
+import { isAdminUser } from "@/app/config/admin";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import Image from "next/image";
@@ -70,7 +70,7 @@ export default async function Sets({
 }) {
   const { lang } = await params;
   const session = await getServerSession(authOptions);
-  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
+  const showAdminNav = isAdminUser(session?.user?.id);
 
   const groupedSets = (await fetchSetsGrouped(lang)) as GroupedSets;
   const allSets = Object.values(groupedSets).flat();

@@ -5,7 +5,7 @@ import {
   fetchCardCountByStamp,
   fetchCardCountByType,
 } from "@/db/mcc_cards/mcc_cards.repo";
-import { ADMIN_USER_ID } from "@/app/config/admin";
+import { isAdminUser } from "@/app/config/admin";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
@@ -44,7 +44,7 @@ export default async function Browse({
 }) {
   const { lang } = await params;
   const session = await getServerSession(authOptions);
-  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
+  const showAdminNav = isAdminUser(session?.user?.id);
   const [rarities, pokedexNumbers, stamps, types] = await Promise.all([
     fetchCardCountByRarity(lang),
     fetchCardCountByPokedexNumber(lang),

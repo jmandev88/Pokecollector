@@ -1,6 +1,6 @@
 import VaultCardCollectionList from "@/app/components/Vault/VaultCardCollectionList";
 import VaultCardListShell from "@/app/components/Vault/VaultCardListShell";
-import { ADMIN_USER_ID } from "@/app/config/admin";
+import { isAdminUser } from "@/app/config/admin";
 import { fetchCardsByType } from "@/db/mcc_cards/mcc_cards.repo";
 import { fetchUserCollection } from "@/db/mcc_user_collection/mcc_user_collection.repo";
 import { authOptions } from "@/lib/auth";
@@ -14,7 +14,7 @@ export default async function Type({
   const { lang, type } = await params;
   const cards = (await fetchCardsByType(lang, type)) ?? [];
   const session = await getServerSession(authOptions);
-  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
+  const showAdminNav = isAdminUser(session?.user?.id);
   let collectionMap: Record<string, number> = {};
 
   if (session?.user?.id) {

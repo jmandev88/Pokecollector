@@ -1,7 +1,7 @@
 import VaultBrowseShell from "@/app/components/Vault/VaultBrowseShell";
 import { getPokemonName } from "@/app/utils/getPokemonName";
 import { normalizeStampName } from "@/app/utils/normalizeStampName";
-import { ADMIN_USER_ID } from "@/app/config/admin";
+import { isAdminUser } from "@/app/config/admin";
 import {
   fetchCardCountByPokedexNumber,
   fetchCardCountByRarity,
@@ -114,7 +114,7 @@ export default async function BrowseCategoryPage({
 }) {
   const { lang, category } = await params;
   const session = await getServerSession(authOptions);
-  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
+  const showAdminNav = isAdminUser(session?.user?.id);
 
   if (!["rarity", "pokedex", "stamp", "type"].includes(category)) {
     notFound();

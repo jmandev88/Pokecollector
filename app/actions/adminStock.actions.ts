@@ -5,7 +5,7 @@ import {
   setCardStock,
   setCardStockPrice,
 } from "@/db/mcc_card_stock/mcc_card_stock.repo";
-import { ADMIN_USER_ID } from "@/app/config/admin";
+import { isAdminUser } from "@/app/config/admin";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
@@ -19,7 +19,7 @@ function homepagePathFor(path: string) {
 async function assertAdmin() {
   const session = await getServerSession(authOptions);
 
-  if (session?.user?.id !== ADMIN_USER_ID) {
+  if (!isAdminUser(session?.user?.id)) {
     throw new Error("Not authorized");
   }
 }

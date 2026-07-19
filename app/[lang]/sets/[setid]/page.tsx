@@ -7,7 +7,7 @@ import { fetchUserCollection } from "@/db/mcc_user_collection/mcc_user_collectio
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { ADMIN_USER_ID } from "@/app/config/admin";
+import { isAdminUser } from "@/app/config/admin";
 
 function SidebarLink({
   href,
@@ -49,7 +49,7 @@ export default async function Sets({
   const uniqueCardCount = new Set(cardsList.map((card) => card.id)).size;
 
   const session = await getServerSession(authOptions);
-  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
+  const showAdminNav = isAdminUser(session?.user?.id);
 
   let collectionMap: Record<string, number> = {};
 

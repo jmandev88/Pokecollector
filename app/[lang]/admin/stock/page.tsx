@@ -1,6 +1,6 @@
 import AdminStockTable from "@/app/components/Admin/AdminStockTable";
 import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
-import { ADMIN_USER_ID } from "@/app/config/admin";
+import { isAdminUser } from "@/app/config/admin";
 import {
   fetchAdminStockCards,
   fetchAdminStockSets,
@@ -76,7 +76,7 @@ export default async function AdminStockPage({
   const resolvedSearchParams = await searchParams;
   const session = await getServerSession(authOptions);
 
-  if (session?.user?.id !== ADMIN_USER_ID) {
+  if (!isAdminUser(session?.user?.id)) {
     notFound();
   }
 
