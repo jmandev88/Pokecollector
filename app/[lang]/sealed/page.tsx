@@ -1,5 +1,6 @@
 import SealedQuantityControls from "@/app/components/Sealed/SealedQuantityControls";
 import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
+import { ADMIN_USER_ID } from "@/app/config/admin";
 import { fetchSealedGrouped } from "@/db/mcc_sealed/mcc_sealed.repo";
 import { fetchUserSealedCollection } from "@/db/mcc_user_sealed_collection/mcc_user_sealed_collection.repo";
 import { authOptions } from "@/lib/auth";
@@ -97,6 +98,7 @@ export default async function Sealed({
 }) {
   const { lang } = await params;
   const session = await getServerSession(authOptions);
+  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
   const groupedSealed = (await fetchSealedGrouped(lang)) as GroupedSealed;
   const collection = session?.user?.id
     ? await fetchUserSealedCollection(session.user.id)
@@ -149,6 +151,12 @@ export default async function Sealed({
           <SidebarLink href={`/${lang}/sets`} icon="collections_bookmark" />
           <SidebarLink href={`/${lang}/browse`} icon="category" />
           <SidebarLink href={`/${lang}/sealed`} icon="storefront" active />
+          {showAdminNav && (
+            <SidebarLink
+              href={`/${lang}/admin/stock`}
+              icon="admin_panel_settings"
+            />
+          )}
         </nav>
 
         <span className="material-symbols-outlined text-[21px] text-[#704f49]">

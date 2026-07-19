@@ -29,11 +29,13 @@ export default function VaultBrowseShell({
   lang,
   title,
   subtitle,
+  showAdminNav = false,
   children,
 }: {
   lang: string;
   title: string;
   subtitle: string;
+  showAdminNav?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -48,6 +50,12 @@ export default function VaultBrowseShell({
           <SidebarLink href={`/${lang}/sets`} icon="collections_bookmark" />
           <SidebarLink href={`/${lang}/browse`} icon="category" active />
           <SidebarLink href={`/${lang}/sealed`} icon="storefront" />
+          {showAdminNav && (
+            <SidebarLink
+              href={`/${lang}/admin/stock`}
+              icon="admin_panel_settings"
+            />
+          )}
         </nav>
 
         <span className="material-symbols-outlined text-[21px] text-[#704f49]">

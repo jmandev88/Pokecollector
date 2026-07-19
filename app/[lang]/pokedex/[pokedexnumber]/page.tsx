@@ -1,5 +1,6 @@
 import VaultCardCollectionList from "@/app/components/Vault/VaultCardCollectionList";
 import VaultCardListShell from "@/app/components/Vault/VaultCardListShell";
+import { ADMIN_USER_ID } from "@/app/config/admin";
 import { getPokemonName } from "@/app/utils/getPokemonName";
 import { fetchCardsByPokedexNumber } from "@/db/mcc_cards/mcc_cards.repo";
 import { fetchUserCollection } from "@/db/mcc_user_collection/mcc_user_collection.repo";
@@ -15,6 +16,7 @@ export default async function Pokedex({
   const pokedexNumber = Number(pokedexnumber);
   const cards = (await fetchCardsByPokedexNumber(lang, pokedexNumber)) ?? [];
   const session = await getServerSession(authOptions);
+  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
   let collectionMap: Record<string, number> = {};
 
   if (session?.user?.id) {
@@ -31,6 +33,7 @@ export default async function Pokedex({
       title={`#${pokedexNumber} ${getPokemonName(pokedexNumber)}`}
       subtitle="Cards filtered by Pokédex number."
       count={cards.length}
+      showAdminNav={showAdminNav}
     >
       <VaultCardCollectionList
         cards={cards}

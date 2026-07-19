@@ -7,6 +7,7 @@ import { fetchUserCollection } from "@/db/mcc_user_collection/mcc_user_collectio
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { ADMIN_USER_ID } from "@/app/config/admin";
 
 function SidebarLink({
   href,
@@ -48,6 +49,7 @@ export default async function Sets({
   const uniqueCardCount = new Set(cardsList.map((card) => card.id)).size;
 
   const session = await getServerSession(authOptions);
+  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
 
   let collectionMap: Record<string, number> = {};
 
@@ -78,6 +80,12 @@ export default async function Sets({
           />
           <SidebarLink href={`/${lang}/browse`} icon="category" />
           <SidebarLink href={`/${lang}/sealed`} icon="storefront" />
+          {showAdminNav && (
+            <SidebarLink
+              href={`/${lang}/admin/stock`}
+              icon="admin_panel_settings"
+            />
+          )}
         </nav>
 
         <span className="material-symbols-outlined text-[21px] text-[#704f49]">

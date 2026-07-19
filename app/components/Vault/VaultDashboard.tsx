@@ -8,6 +8,7 @@ import {
   decrementCollection,
   incrementCollection,
 } from "@/app/actions/collections.actions";
+import { ADMIN_USER_ID } from "@/app/config/admin";
 import { normalizeStampName } from "@/app/utils/normalizeStampName";
 import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
 
@@ -260,6 +261,12 @@ export default function VaultDashboard({
           <SidebarLink href={`/${lang}/sets`} icon="collections_bookmark" />
           <SidebarLink href={`/${lang}/browse`} icon="category" />
           <SidebarLink href={`/${lang}/sealed`} icon="storefront" />
+          {session?.user?.id === ADMIN_USER_ID && (
+            <SidebarLink
+              href={`/${lang}/admin/stock`}
+              icon="admin_panel_settings"
+            />
+          )}
         </nav>
 
         <div className="flex flex-col items-center gap-5">

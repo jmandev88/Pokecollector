@@ -1,12 +1,15 @@
 import VaultBrowseShell from "@/app/components/Vault/VaultBrowseShell";
 import { getPokemonName } from "@/app/utils/getPokemonName";
 import { normalizeStampName } from "@/app/utils/normalizeStampName";
+import { ADMIN_USER_ID } from "@/app/config/admin";
 import {
   fetchCardCountByPokedexNumber,
   fetchCardCountByRarity,
   fetchCardCountByStamp,
   fetchCardCountByType,
 } from "@/db/mcc_cards/mcc_cards.repo";
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -110,6 +113,8 @@ export default async function BrowseCategoryPage({
   params: Promise<{ lang: string; category: string }>;
 }) {
   const { lang, category } = await params;
+  const session = await getServerSession(authOptions);
+  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
 
   if (!["rarity", "pokedex", "stamp", "type"].includes(category)) {
     notFound();
@@ -123,6 +128,7 @@ export default async function BrowseCategoryPage({
       lang={lang}
       title={categoryTitle(safeCategory)}
       subtitle={categorySubtitle(safeCategory)}
+      showAdminNav={showAdminNav}
     >
       <section className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {entries.map((entry) => (

@@ -1,5 +1,8 @@
 import { fetchSetsGrouped } from "@/db/mcc_sets/mcc_sets.repo";
 import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
+import { ADMIN_USER_ID } from "@/app/config/admin";
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -66,6 +69,8 @@ export default async function Sets({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
+  const session = await getServerSession(authOptions);
+  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
 
   const groupedSets = (await fetchSetsGrouped(lang)) as GroupedSets;
   const allSets = Object.values(groupedSets).flat();
@@ -86,6 +91,12 @@ export default async function Sets({
           />
           <SidebarLink href={`/${lang}/browse`} icon="category" />
           <SidebarLink href={`/${lang}/sealed`} icon="storefront" />
+          {showAdminNav && (
+            <SidebarLink
+              href={`/${lang}/admin/stock`}
+              icon="admin_panel_settings"
+            />
+          )}
         </nav>
 
         <span className="material-symbols-outlined text-[21px] text-[#704f49]">

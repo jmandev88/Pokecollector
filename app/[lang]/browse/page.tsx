@@ -5,6 +5,9 @@ import {
   fetchCardCountByStamp,
   fetchCardCountByType,
 } from "@/db/mcc_cards/mcc_cards.repo";
+import { ADMIN_USER_ID } from "@/app/config/admin";
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 import Link from "next/link";
 
 const browseGroups = [
@@ -40,6 +43,8 @@ export default async function Browse({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
+  const session = await getServerSession(authOptions);
+  const showAdminNav = session?.user?.id === ADMIN_USER_ID;
   const [rarities, pokedexNumbers, stamps, types] = await Promise.all([
     fetchCardCountByRarity(lang),
     fetchCardCountByPokedexNumber(lang),
@@ -58,6 +63,7 @@ export default async function Browse({
       lang={lang}
       title="Filter Library"
       subtitle="Choose a card index, then drill into every available listing."
+      showAdminNav={showAdminNav}
     >
       <section className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {browseGroups.map((group) => (
