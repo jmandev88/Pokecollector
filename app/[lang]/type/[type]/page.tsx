@@ -34,6 +34,7 @@ export default async function Type({
       showAdminNav={showAdminNav}
     >
       <VaultCardCollectionList
+        lang={lang}
         cards={cards}
         collectionMap={collectionMap}
         showCollectionControls={!!session?.user?.id}

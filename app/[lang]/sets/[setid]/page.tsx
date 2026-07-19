@@ -148,10 +148,11 @@ export default async function Sets({
             </div>
           </section>
 
-          <VaultCardCollectionList
-            cards={cardsList}
-            collectionMap={collectionMap}
-            showCollectionControls={!!session?.user?.id}
+            <VaultCardCollectionList
+              lang={lang}
+              cards={cardsList}
+              collectionMap={collectionMap}
+              showCollectionControls={!!session?.user?.id}
             emptyMessage="No cards found for this language and set."
           />
         </main>

@@ -1,7 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { signIn } from "next-auth/react";
 import CardTile from "@/app/components/Card/CardTile";
+import VaultCardModal from "@/app/components/Vault/VaultCardModal";
+import {
+  decrementCollection,
+  incrementCollection,
+} from "@/app/actions/collections.actions";
 
 type VaultListCard = {
   id: string;
@@ -11,13 +17,33 @@ type VaultListCard = {
   variant_id: string;
   variant_name: string;
   rarity: string;
+  card_name?: string;
+  supertype?: string | null;
+  subtypes?: string[] | null;
+  types?: string[] | null;
+  hp?: string | null;
+  artist?: string | null;
+  printed_number?: string | null;
+  regulation_mark?: string | null;
+  attacks?: unknown;
+  weaknesses?: unknown;
+  retreat_cost?: string[] | null;
+  legalities?: Record<string, string> | null;
+  national_pokedex_numbers?: number[] | null;
+  expansion?: {
+    name?: string;
+    series?: string;
+    release_date?: string;
+  } | null;
   variant_images?: {
     type: string;
-    medium: string;
+    medium?: string;
+    large?: string;
   }[];
   images?: {
     type: string;
-    medium: string;
+    medium?: string;
+    large?: string;
   }[];
 };
 
@@ -76,17 +102,21 @@ function ProgressBar({
 }
 
 export default function VaultCardCollectionList({
+  lang,
   cards,
   collectionMap,
   showCollectionControls,
   emptyMessage,
 }: {
+  lang: string;
   cards: VaultListCard[];
   collectionMap: Record<string, number>;
   showCollectionControls: boolean;
   emptyMessage: string;
 }) {
   const [quantities, setQuantities] = useState(collectionMap);
+  const [selectedCard, setSelectedCard] = useState<VaultListCard | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const progress = useMemo(() => {
     const cardKeys = new Set(cards.map(standardCardKey));
@@ -123,6 +153,58 @@ export default function VaultCardCollectionList({
     });
   };
 
+  const selectedQuantity = selectedCard
+    ? quantities[selectedCard.variant_id] ?? 0
+    : 0;
+
+  const handleIncrementCollection = () => {
+    if (!selectedCard) {
+      return;
+    }
+
+    if (!showCollectionControls) {
+      signIn("google");
+      return;
+    }
+
+    const variantId = selectedCard.variant_id;
+    const previousQuantities = { ...quantities };
+
+    startTransition(async () => {
+      handleQuantityChange(variantId, (quantities[variantId] ?? 0) + 1);
+
+      try {
+        await incrementCollection(variantId);
+      } catch {
+        setQuantities(previousQuantities);
+      }
+    });
+  };
+
+  const handleDecrementCollection = () => {
+    if (!selectedCard || selectedQuantity <= 0) {
+      return;
+    }
+
+    if (!showCollectionControls) {
+      signIn("google");
+      return;
+    }
+
+    const variantId = selectedCard.variant_id;
+    const previousQuantities = { ...quantities };
+
+    startTransition(async () => {
+      handleQuantityChange(variantId, Math.max(selectedQuantity - 1, 0));
+
+      try {
+        await decrementCollection(variantId);
+      } catch {
+        setQuantities(previousQuantities);
+      }
+    });
+  };
+
   return (
     <>
       <section className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -149,6 +231,7 @@ export default function VaultCardCollectionList({
               quantity={quantities[card.variant_id] ?? 0}
               showCollectionControls={showCollectionControls}
               variant="vault"
+              onSelect={() => setSelectedCard(card)}
               onQuantityChange={handleQuantityChange}
             />
           ))
@@ -158,6 +241,21 @@ export default function VaultCardCollectionList({
           </p>
         )}
       </section>
+
+      {selectedCard && (
+        <VaultCardModal
+          lang={lang}
+          card={{
+            ...selectedCard,
+            card_name: selectedCard.card_name ?? selectedCard.name,
+          }}
+          quantity={selectedQuantity}
+          isPending={isPending}
+          onClose={() => setSelectedCard(null)}
+          onIncrement={handleIncrementCollection}
+          onDecrement={handleDecrementCollection}
+        />
+      )}
     </>
   );
 }

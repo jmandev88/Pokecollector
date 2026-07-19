@@ -35,6 +35,7 @@ export default async function Stamp({
       showAdminNav={showAdminNav}
     >
       <VaultCardCollectionList
+        lang={lang}
         cards={cards}
         collectionMap={collectionMap}
         showCollectionControls={!!session?.user?.id}

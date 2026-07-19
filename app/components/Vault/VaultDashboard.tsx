@@ -4,12 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { signIn, useSession } from "next-auth/react";
+import CardTile from "@/app/components/Card/CardTile";
+import VaultCardModal from "@/app/components/Vault/VaultCardModal";
 import {
   decrementCollection,
   incrementCollection,
 } from "@/app/actions/collections.actions";
 import { isAdminUser } from "@/app/config/admin";
-import { normalizeStampName } from "@/app/utils/normalizeStampName";
 import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
 
 type VaultImage = {
@@ -69,75 +70,8 @@ type VaultDashboardProps = {
   };
 };
 
-function imageFor(card: VaultCard) {
-  return (
-    card.variant_images?.find((image) => image.type === "front")?.large ??
-    card.variant_images?.find((image) => image.type === "front")?.medium ??
-    card.variant_images?.[0]?.large ??
-    card.variant_images?.[0]?.medium ??
-    card.images?.find((image) => image.type === "front")?.large ??
-    card.images?.find((image) => image.type === "front")?.medium ??
-    card.images?.[0]?.large ??
-    card.images?.[0]?.medium ??
-    "/placeholder_card.png"
-  );
-}
-
 function priceFor(card: VaultCard) {
   return card.listing_price ?? "Price pending";
-}
-
-function titleFor(card: VaultCard) {
-  return card.listing_title ?? card.card_name;
-}
-
-function trendFor(card: VaultCard) {
-  return card.listing_market_trend ?? "+2.4% this month";
-}
-
-function compactList(values?: (string | number)[] | null) {
-  return values?.filter(Boolean).join(", ") || "None";
-}
-
-function firstNamedItem(items: unknown) {
-  if (!Array.isArray(items)) {
-    return null;
-  }
-
-  const firstItem = items.find(
-    (item): item is { name?: string; type?: string; value?: string } =>
-      Boolean(item) &&
-      typeof item === "object" &&
-      ("name" in item || "type" in item || "value" in item)
-  );
-
-  if (firstItem?.name) {
-    return firstItem.name;
-  }
-
-  if (firstItem?.type && firstItem?.value) {
-    return `${firstItem.type} ${firstItem.value}`;
-  }
-
-  if (firstItem?.type) {
-    return firstItem.type;
-  }
-
-  return null;
-}
-
-function legalitiesSummary(legalities?: Record<string, string> | null) {
-  if (!legalities) {
-    return "Unknown";
-  }
-
-  return (
-    Object.entries(legalities)
-      .filter(([, status]) => Boolean(status))
-      .slice(0, 3)
-      .map(([format, status]) => `${format}: ${status}`)
-      .join(", ") || "Unknown"
-  );
 }
 
 function SidebarLink({
@@ -183,7 +117,6 @@ export default function VaultDashboard({
     () => (selectedCard ? localQuantities[selectedCard.variant_id] ?? 0 : 0),
     [localQuantities, selectedCard]
   );
-  const selectedIsOwned = selectedQuantity > 0;
 
   const handleIncrementCollection = () => {
     if (!selectedCard) {
@@ -244,6 +177,20 @@ export default function VaultDashboard({
       } catch {
         setLocalQuantities(previousQuantities);
       }
+    });
+  };
+
+  const handleQuantityChange = (variantId: string, quantity: number) => {
+    setLocalQuantities((current) => {
+      const next = { ...current };
+
+      if (quantity <= 0) {
+        delete next[variantId];
+      } else {
+        next[variantId] = quantity;
+      }
+
+      return next;
     });
   };
 
@@ -344,35 +291,26 @@ export default function VaultDashboard({
             </Link>
           </section>
 
-          <section className="mt-10 grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+          <section className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
             {featuredCards.map((card) => (
-              <button
+              <CardTile
                 key={card.variant_id}
-                onClick={() => setSelectedCard(card)}
-                className="group block cursor-pointer text-left"
-              >
-                <div className="relative aspect-[5/7] overflow-hidden rounded-xl bg-[#eef3f4] shadow-sm ring-1 ring-[#f3dfdb] transition group-hover:-translate-y-1 group-hover:shadow-xl">
-                  <Image
-                    src={imageFor(card)}
-                    alt={titleFor(card)}
-                    width={320}
-                    height={448}
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute right-3 top-3 rounded-md bg-[#cf160f] px-2.5 py-2 text-[11px] font-black text-white shadow">
-                    {priceFor(card)}
-                  </div>
-                  {(localQuantities[card.variant_id] ?? 0) > 0 && (
-                    <div className="absolute left-3 top-3 rounded-full bg-[#13842e] px-3 py-1 text-[8px] font-black uppercase text-white">
-                      Owned x{localQuantities[card.variant_id]}
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 text-base font-medium leading-tight">
-                  {titleFor(card)}
-                </div>
-              </button>
+                card={{
+                  id: card.card_id,
+                  name: card.card_name,
+                  variant_id: card.variant_id,
+                  variant_name: card.variant_name ?? "",
+                  rarity: card.rarity ?? "",
+                  variant_images: card.variant_images,
+                  images: card.images,
+                }}
+                quantity={localQuantities[card.variant_id] ?? 0}
+                showCollectionControls={!!session?.user?.id}
+                variant="vault"
+                marketPrice={priceFor(card)}
+                onSelect={() => setSelectedCard(card)}
+                onQuantityChange={handleQuantityChange}
+              />
             ))}
           </section>
         </main>
@@ -392,235 +330,17 @@ export default function VaultDashboard({
       </div>
 
       {selectedCard && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 backdrop-blur-sm">
-          <div className="grid w-full max-w-[1380px] overflow-hidden rounded-3xl bg-[#eee] shadow-2xl md:grid-cols-[42%_58%]">
-            <div className="bg-white p-10 md:p-14">
-              <div className="flex h-full items-center justify-center rounded-3xl border-4 border-[#ffe8e5] bg-[#f3f8fa] p-6">
-                <Image
-                  src={imageFor(selectedCard)}
-                  alt={titleFor(selectedCard)}
-                  width={560}
-                  height={780}
-                  className="max-h-[68vh] w-full object-contain drop-shadow-xl"
-                />
-              </div>
-            </div>
-
-            <div className="relative bg-[#eeeeec] p-10 md:p-14">
-              <button
-                onClick={() => setSelectedCard(null)}
-                className="absolute right-8 top-7 flex h-14 w-14 items-center justify-center rounded-full bg-white/45 text-[#2c1715] transition hover:bg-white"
-              >
-                <span className="material-symbols-outlined text-[23px]">
-                  close
-                </span>
-              </button>
-
-              <div className="flex items-center gap-4">
-                <span
-                  className={`rounded-full px-4 py-2 text-[9px] font-black uppercase text-white ${
-                    selectedIsOwned ? "bg-[#cf160f]" : "bg-[#6d5550]"
-                  }`}
-                >
-                  {selectedIsOwned ? "Owned" : "Vault"}
-                </span>
-                <span className="text-base font-semibold uppercase tracking-wide text-[#6a4c47]">
-                  Set #{selectedCard.number ?? selectedCard.expansion_id ?? "000"}
-                </span>
-              </div>
-
-              <h3 className="mt-4 text-[32px] font-black leading-tight">
-                {titleFor(selectedCard)}
-              </h3>
-              <div className="mt-2 text-base font-medium text-[#d0160f]">
-                {selectedCard.expansion?.name ?? "Unknown Set"} —{" "}
-                {selectedCard.expansion?.release_date?.slice(0, 4) ?? "Vault"}
-              </div>
-              <div className="mt-1 text-xs font-semibold text-[#704f49]">
-                DB card: {selectedCard.card_name}
-              </div>
-
-              <div className="mt-8 rounded-2xl bg-white/55 p-5">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Card number
-                    </div>
-                    <div className="mt-1 text-base font-semibold">
-                      {selectedCard.printed_number ??
-                        selectedCard.number ??
-                        "Unknown"}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Supertype
-                    </div>
-                    <div className="mt-1 text-base font-semibold">
-                      {selectedCard.supertype ?? "Unknown"}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      HP
-                    </div>
-                    <div className="mt-1 text-base font-semibold">
-                      {selectedCard.hp ?? "N/A"}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Types
-                    </div>
-                    <div className="mt-1 text-base font-semibold">
-                      {compactList(selectedCard.types)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Subtypes
-                    </div>
-                    <div className="mt-1 text-base font-semibold">
-                      {compactList(selectedCard.subtypes)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      First attack
-                    </div>
-                    <div className="mt-1 text-base font-semibold">
-                      {firstNamedItem(selectedCard.attacks) ?? "None"}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Weakness
-                    </div>
-                    <div className="mt-1 text-base font-semibold">
-                      {firstNamedItem(selectedCard.weaknesses) ?? "None"}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Retreat cost
-                    </div>
-                    <div className="mt-1 text-base font-semibold">
-                      {compactList(selectedCard.retreat_cost)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Pokédex
-                    </div>
-                    <div className="mt-1 text-base font-semibold">
-                      {compactList(selectedCard.national_pokedex_numbers)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-9 rounded-2xl bg-[#fff2ef] p-7">
-                <div className="grid gap-7 md:grid-cols-2">
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Market price
-                    </div>
-                    <div className="mt-1 text-xl font-medium">
-                      {priceFor(selectedCard)}
-                    </div>
-                    <div className="mt-1 text-[11px] font-bold text-[#15802e]">
-                      {trendFor(selectedCard)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Rarity
-                    </div>
-                    <div className="mt-1 text-xl font-medium">
-                      {selectedCard.rarity ?? "Unknown"}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8">
-                  <div className="text-xs font-black uppercase text-[#704f49]">
-                    DB details
-                  </div>
-                  <div className="mt-2 grid gap-2 text-xs font-semibold text-[#704f49] md:grid-cols-2">
-                    <div>Artist: {selectedCard.artist ?? "Unknown"}</div>
-                    <div>
-                      Regulation: {selectedCard.regulation_mark ?? "N/A"}
-                    </div>
-                    <div className="md:col-span-2">
-                      Legalities: {legalitiesSummary(selectedCard.legalities)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {selectedCard.variant_name && (
-                <div className="mt-5 text-xs font-semibold text-[#704f49]">
-                  Variant: {normalizeStampName(selectedCard.variant_name)}
-                </div>
-              )}
-
-              <div className="mt-6 rounded-2xl border border-[#f5d1ca] bg-white/55 p-5">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="text-xs font-black uppercase text-[#704f49]">
-                      Collection quantity
-                    </div>
-                  </div>
-
-                  <div className="flex overflow-hidden rounded-lg border border-[#efcbc4] bg-white">
-                    <button
-                      disabled={isPending || selectedQuantity <= 0}
-                      onClick={handleDecrementCollection}
-                      className="flex h-14 w-16 items-center justify-center bg-[#fff2ef] text-xl font-black text-[#cf160f] disabled:cursor-not-allowed disabled:opacity-35"
-                    >
-                      -
-                    </button>
-                    <div className="flex h-14 min-w-20 items-center justify-center px-5 text-base font-black">
-                      {selectedQuantity}
-                    </div>
-                    <button
-                      disabled={isPending}
-                      onClick={handleIncrementCollection}
-                      className="flex h-14 w-16 items-center justify-center bg-[#cf160f] text-xl font-black text-white disabled:opacity-60"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-9 flex flex-wrap gap-6">
-                <Link
-                  href={`/${lang}/sets/${selectedCard.expansion_id ?? ""}`}
-                  className="flex min-h-20 items-center rounded-lg bg-[#cf160f] px-10 text-base font-black text-white transition hover:bg-[#a9110c]"
-                >
-                  Manage in Vault
-                </Link>
-                <button className="flex h-20 w-20 items-center justify-center rounded-lg bg-[#ffd6ce] text-[#2c1715]">
-                  <span className="material-symbols-outlined text-[23px]">
-                    share
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <VaultCardModal
+          lang={lang}
+          card={selectedCard}
+          quantity={selectedQuantity}
+          isPending={isPending}
+          price={priceFor(selectedCard)}
+          priceTrend={selectedCard.listing_market_trend}
+          onClose={() => setSelectedCard(null)}
+          onIncrement={handleIncrementCollection}
+          onDecrement={handleDecrementCollection}
+        />
       )}
     </div>
   );

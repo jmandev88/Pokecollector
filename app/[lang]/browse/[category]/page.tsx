@@ -3,6 +3,7 @@ import { getPokemonName } from "@/app/utils/getPokemonName";
 import { normalizeStampName } from "@/app/utils/normalizeStampName";
 import { isAdminUser } from "@/app/config/admin";
 import {
+  fetchCardCountByArtist,
   fetchCardCountByPokedexNumber,
   fetchCardCountByRarity,
   fetchCardCountByStamp,
@@ -13,7 +14,7 @@ import { getServerSession } from "next-auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-type BrowseCategory = "rarity" | "pokedex" | "stamp" | "type";
+type BrowseCategory = "rarity" | "pokedex" | "stamp" | "type" | "artist";
 
 type BrowseEntry = {
   label: string;
@@ -33,6 +34,7 @@ function categoryTitle(category: BrowseCategory) {
     pokedex: "Pokédex Listings",
     stamp: "Stamp Listings",
     type: "Type Listings",
+    artist: "Artist Listings",
   };
 
   return titles[category];
@@ -44,6 +46,7 @@ function categorySubtitle(category: BrowseCategory) {
     pokedex: "Every national Pokédex number found in the card database.",
     stamp: "Every variant stamp found in the card database.",
     type: "Every elemental type found in the card database.",
+    artist: "Every illustrator or artist found in the card database.",
   };
 
   return subtitles[category];
@@ -70,6 +73,19 @@ async function fetchEntries(lang: string, category: BrowseCategory) {
       (row): BrowseEntry => ({
         label: row.card_type,
         href: `/${lang}/type/${encodeURIComponent(row.card_type)}`,
+        cardCount: toNumber(row.card_count),
+        collectibleCount: toNumber(row.collectible_count),
+      })
+    );
+  }
+
+  if (category === "artist") {
+    const rows = await fetchCardCountByArtist(lang);
+
+    return rows.map(
+      (row): BrowseEntry => ({
+        label: row.artist,
+        href: `/${lang}/artist/${encodeURIComponent(row.artist)}`,
         cardCount: toNumber(row.card_count),
         collectibleCount: toNumber(row.collectible_count),
       })
@@ -116,7 +132,7 @@ export default async function BrowseCategoryPage({
   const session = await getServerSession(authOptions);
   const showAdminNav = isAdminUser(session?.user?.id);
 
-  if (!["rarity", "pokedex", "stamp", "type"].includes(category)) {
+  if (!["rarity", "pokedex", "stamp", "type", "artist"].includes(category)) {
     notFound();
   }
 

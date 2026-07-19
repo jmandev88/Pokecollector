@@ -114,6 +114,22 @@ export async function fetchCardsByStamp(lang: string, stamp: string) {
   return result.rows || null;
 }
 
+export async function fetchCardsByArtist(lang: string, artist: string) {
+  const safeLang = normalizeLanguage(lang);
+
+  const result = await db.query(
+    `
+    ${CARD_SELECT}
+    WHERE c.language_code = $1
+      AND c.artist = $2
+  ${CARD_ORDER}
+    `,
+    [safeLang.toUpperCase(), decodeURIComponent(artist)]
+  );
+
+  return result.rows || null;
+}
+
 type VaultMarketplaceListing = {
   display_order: number;
   expansion_id: string;
@@ -376,6 +392,41 @@ export async function fetchCardCountByPokedexNumber(lang: string) {
       ON variant_counts.card_id = cards_by_number.id
     GROUP BY pokedex_number
     ORDER BY pokedex_number;
+    `,
+    [safeLang.toUpperCase()]
+  );
+
+  return result.rows;
+}
+
+export async function fetchCardCountByArtist(lang: string) {
+  const safeLang = normalizeLanguage(lang);
+
+  const result = await db.query(
+    `
+      SELECT
+          c.artist,
+          COUNT(*) AS card_count,
+          SUM(
+              CASE
+                  WHEN variant_counts.variant_count IS NULL THEN 1
+                  ELSE variant_counts.variant_count
+              END
+          ) AS collectible_count
+      FROM mcc_cards c
+      LEFT JOIN (
+          SELECT
+              card_id,
+              COUNT(*) AS variant_count
+          FROM mcc_card_variants
+          GROUP BY card_id
+      ) variant_counts
+          ON variant_counts.card_id = c.id
+      WHERE c.language_code = $1
+        AND c.artist IS NOT NULL
+        AND c.artist != ''
+      GROUP BY c.artist
+      ORDER BY collectible_count DESC, c.artist;
     `,
     [safeLang.toUpperCase()]
   );

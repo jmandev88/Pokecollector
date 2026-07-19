@@ -1,5 +1,6 @@
 import VaultBrowseShell from "@/app/components/Vault/VaultBrowseShell";
 import {
+  fetchCardCountByArtist,
   fetchCardCountByPokedexNumber,
   fetchCardCountByRarity,
   fetchCardCountByStamp,
@@ -35,6 +36,12 @@ const browseGroups = [
     description: "Browse cards by elemental type.",
     icon: "category",
   },
+  {
+    id: "artist",
+    label: "Artist",
+    description: "Browse cards by illustrator or artist.",
+    icon: "brush",
+  },
 ];
 
 export default async function Browse({
@@ -45,17 +52,19 @@ export default async function Browse({
   const { lang } = await params;
   const session = await getServerSession(authOptions);
   const showAdminNav = isAdminUser(session?.user?.id);
-  const [rarities, pokedexNumbers, stamps, types] = await Promise.all([
+  const [rarities, pokedexNumbers, stamps, types, artists] = await Promise.all([
     fetchCardCountByRarity(lang),
     fetchCardCountByPokedexNumber(lang),
     fetchCardCountByStamp(lang),
     fetchCardCountByType(lang),
+    fetchCardCountByArtist(lang),
   ]);
   const counts: Record<string, number> = {
     rarity: rarities.length,
     pokedex: pokedexNumbers.length,
     stamp: stamps.length,
     type: types.length,
+    artist: artists.length,
   };
 
   return (
@@ -65,7 +74,7 @@ export default async function Browse({
       subtitle="Choose a card index, then drill into every available listing."
       showAdminNav={showAdminNav}
     >
-      <section className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {browseGroups.map((group) => (
           <Link
             href={`/${lang}/browse/${group.id}`}

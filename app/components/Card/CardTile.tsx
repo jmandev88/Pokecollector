@@ -15,17 +15,21 @@ type CardTileProps = {
 
     variant_images?: {
       type: string;
-      medium: string;
+      medium?: string;
+      large?: string;
     }[];
 
     images?: {
       type: string;
-      medium: string;
+      medium?: string;
+      large?: string;
     }[];
   };
   quantity?: number;
   showCollectionControls?: boolean;
   variant?: "default" | "vault";
+  marketPrice?: string | null;
+  onSelect?: () => void;
   onQuantityChange?: (variantId: string, quantity: number) => void;
 };
 
@@ -34,16 +38,37 @@ export default function CardTile({
   quantity = 0,
   showCollectionControls = true,
   variant = "default",
+  marketPrice,
+  onSelect,
   onQuantityChange,
 }: CardTileProps) {
   const image =
     card.variant_images?.find((img) => img.type === "front")?.medium ??
+    card.variant_images?.find((img) => img.type === "front")?.large ??
+    card.variant_images?.[0]?.medium ??
+    card.variant_images?.[0]?.large ??
     card.images?.find((img) => img.type === "front")?.medium ??
+    card.images?.find((img) => img.type === "front")?.large ??
+    card.images?.[0]?.medium ??
+    card.images?.[0]?.large ??
     "/placeholder_card.png";
   const isVault = variant === "vault";
 
   return (
     <div
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (!onSelect) {
+          return;
+        }
+
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
       className={
         isVault
           ? "group flex h-full cursor-pointer flex-col justify-between rounded-xl border border-[#f3dfdb] bg-white/70 p-3 shadow-sm transition hover:-translate-y-1 hover:border-[#efb8af] hover:bg-white hover:shadow-xl"
@@ -53,7 +78,7 @@ export default function CardTile({
       <div
         className={
           isVault
-            ? "overflow-hidden rounded-lg bg-[#fff0ed] ring-1 ring-[#f3dfdb]"
+            ? "relative overflow-hidden rounded-lg bg-[#fff0ed] ring-1 ring-[#f3dfdb]"
             : ""
         }
       >
@@ -68,6 +93,11 @@ export default function CardTile({
           width={200}
           height={280}
         />
+        {marketPrice && (
+          <div className="absolute right-2 top-2 rounded-md bg-[#cf160f] px-2 py-1.5 text-[10px] font-black text-white shadow">
+            {marketPrice}
+          </div>
+        )}
       </div>
 
       <div
@@ -78,14 +108,16 @@ export default function CardTile({
         }
       >
         {showCollectionControls && (
-          <CardQuantityControls
-            variantId={card.variant_id}
-            quantity={quantity}
-            variant={variant}
-            onQuantityChange={(nextQuantity) =>
-              onQuantityChange?.(card.variant_id, nextQuantity)
-            }
-          />
+          <div onClick={(event) => event.stopPropagation()}>
+            <CardQuantityControls
+              variantId={card.variant_id}
+              quantity={quantity}
+              variant={variant}
+              onQuantityChange={(nextQuantity) =>
+                onQuantityChange?.(card.variant_id, nextQuantity)
+              }
+            />
+          </div>
         )}
 
         <div className={showCollectionControls ? "mt-3" : ""}>
@@ -108,8 +140,12 @@ export default function CardTile({
                 : ""
             }
           >
-            {card.rarity ?? (
-              <span dangerouslySetInnerHTML={{ __html: "&nbsp;" }}></span>
+            {marketPrice ? (
+              `Market price: ${marketPrice}`
+            ) : (
+              card.rarity ?? (
+                <span dangerouslySetInnerHTML={{ __html: "&nbsp;" }}></span>
+              )
             )}
           </div>
         </div>
