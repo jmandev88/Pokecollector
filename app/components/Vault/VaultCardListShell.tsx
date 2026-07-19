@@ -1,12 +1,6 @@
-import VaultCardCollectionList from "@/app/components/Vault/VaultCardCollectionList";
-import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
 import Link from "next/link";
-
-import { fetchCardsByExpansion } from "@/db/mcc_cards/mcc_cards.repo";
-import { fetchUserCollection } from "@/db/mcc_user_collection/mcc_user_collection.repo";
-
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { ReactNode } from "react";
+import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
 
 function SidebarLink({
   href,
@@ -31,37 +25,19 @@ function SidebarLink({
   );
 }
 
-export default async function Sets({
-  params,
+export default function VaultCardListShell({
+  lang,
+  title,
+  subtitle,
+  count,
+  children,
 }: {
-  params: Promise<{ lang: string; setid: string }>;
+  lang: string;
+  title: string;
+  subtitle: string;
+  count: number;
+  children: ReactNode;
 }) {
-  const { lang, setid } = await params;
-
-  const cards = await fetchCardsByExpansion(lang, setid);
-  const cardsList = cards ?? [];
-  const firstCard = cardsList[0];
-  const setName = firstCard?.expansion?.name ?? setid;
-  const setSeries = firstCard?.expansion?.series ?? "Set checklist";
-  const setYear = firstCard?.expansion?.release_date?.slice(0, 4);
-  const variantCount = cardsList.length;
-  const uniqueCardCount = new Set(cardsList.map((card) => card.id)).size;
-
-  const session = await getServerSession(authOptions);
-
-  let collectionMap: Record<string, number> = {};
-
-  if (session?.user?.id) {
-    const collection = await fetchUserCollection(session.user.id);
-
-    collectionMap = Object.fromEntries(
-      collection.map((card) => [
-        card.variant_id,
-        card.quantity,
-      ])
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#fff8f6] text-[#2c1715]">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[60px] flex-col items-center border-r border-[#f2d9d4] bg-[#fff0ed] py-5 md:flex">
@@ -71,12 +47,8 @@ export default async function Sets({
 
         <nav className="mt-12 flex flex-1 flex-col items-center gap-5">
           <SidebarLink href={`/${lang}`} icon="dashboard" />
-          <SidebarLink
-            href={`/${lang}/sets`}
-            icon="collections_bookmark"
-            active
-          />
-          <SidebarLink href={`/${lang}/browse`} icon="category" />
+          <SidebarLink href={`/${lang}/sets`} icon="collections_bookmark" />
+          <SidebarLink href={`/${lang}/browse`} icon="category" active />
           <SidebarLink href={`/${lang}/sealed`} icon="storefront" />
         </nav>
 
@@ -89,7 +61,7 @@ export default async function Sets({
         <header className="flex min-h-[96px] items-center justify-between border-b border-[#f4dfdb] bg-white/85 px-6 md:px-12">
           <div className="flex items-center gap-9">
             <h1 className="text-xl font-black tracking-tight text-[#c7130c] md:text-2xl">
-              Set Checklist
+              Card Registry
             </h1>
             <div className="hidden h-6 w-px bg-[#eac9c2] md:block" />
             <div className="hidden text-[9px] font-black uppercase tracking-[0.12em] text-[#69443f] md:block">
@@ -102,7 +74,7 @@ export default async function Sets({
               <span className="material-symbols-outlined text-[16px]">
                 search
               </span>
-              <span className="text-sm">Search this set...</span>
+              <span className="text-sm">Search these cards...</span>
             </div>
             <VaultLanguageSelector lang={lang} />
             <span className="material-symbols-outlined text-[23px] text-[#6f4d47]">
@@ -115,37 +87,26 @@ export default async function Sets({
           <section className="flex flex-wrap items-end justify-between gap-6">
             <div>
               <Link
-                href={`/${lang}/sets`}
+                href={`/${lang}`}
                 className="mb-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-wide text-[#cf160f]"
               >
                 <span className="material-symbols-outlined text-[16px]">
                   chevron_left
                 </span>
-                All sets
+                Dashboard
               </Link>
-              <h2 className="text-2xl font-black tracking-tight">{setName}</h2>
+              <h2 className="text-2xl font-black tracking-tight">{title}</h2>
               <p className="mt-2 text-sm font-semibold text-[#6e514e]">
-                {setSeries}
-                {setYear ? ` • ${setYear}` : ""}
+                {subtitle}
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <div className="rounded-full bg-[#cf160f] px-4 py-2 text-[11px] font-black text-white shadow">
-                {uniqueCardCount.toLocaleString("en-GB")} cards
-              </div>
-              <div className="rounded-full bg-[#fff0ed] px-4 py-2 text-[11px] font-black text-[#704f49] ring-1 ring-[#f3dfdb]">
-                {variantCount.toLocaleString("en-GB")} variants
-              </div>
+            <div className="rounded-full bg-[#cf160f] px-4 py-2 text-[11px] font-black text-white shadow">
+              {count.toLocaleString("en-GB")} cards
             </div>
           </section>
 
-          <VaultCardCollectionList
-            cards={cardsList}
-            collectionMap={collectionMap}
-            showCollectionControls={!!session?.user?.id}
-            emptyMessage="No cards found for this language and set."
-          />
+          {children}
         </main>
 
         <footer className="flex min-h-[82px] items-center justify-between bg-[#ffe0da] px-6 text-[#72524d] md:px-12">

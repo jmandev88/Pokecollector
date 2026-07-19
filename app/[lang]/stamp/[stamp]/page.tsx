@@ -1,6 +1,10 @@
-import Header from "@/app/components/layout/Header/Header";
-import CardTile from "@/app/components/Card/CardTile";
+import VaultCardCollectionList from "@/app/components/Vault/VaultCardCollectionList";
+import VaultCardListShell from "@/app/components/Vault/VaultCardListShell";
+import { normalizeStampName } from "@/app/utils/normalizeStampName";
 import { fetchCardsByStamp } from "@/db/mcc_cards/mcc_cards.repo";
+import { fetchUserCollection } from "@/db/mcc_user_collection/mcc_user_collection.repo";
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 
 export default async function Stamp({
   params,
@@ -8,23 +12,31 @@ export default async function Stamp({
   params: Promise<{ lang: string; stamp: string }>;
 }) {
   const { lang, stamp } = await params;
-  const cards = await fetchCardsByStamp(lang, stamp);
+  const cards = (await fetchCardsByStamp(lang, stamp)) ?? [];
+  const session = await getServerSession(authOptions);
+  let collectionMap: Record<string, number> = {};
+
+  if (session?.user?.id) {
+    const collection = await fetchUserCollection(session.user.id);
+
+    collectionMap = Object.fromEntries(
+      collection.map((card) => [card.variant_id, card.quantity])
+    );
+  }
 
   return (
-    <div className="min-h-screen min-w-full bg-gray-800 text-white">
-      <Header lang={lang} />
-
-      <div className="container min-w-full mx-auto p-4">
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
-          {cards ? (
-            cards.map((card) => (
-              <CardTile key={card.id} card={card} showCollectionControls={false} />
-            ))
-          ) : (
-            <p>No cards found for this language and stamp.</p>
-          )}
-        </div>
-      </div>
-    </div>
+    <VaultCardListShell
+      lang={lang}
+      title={normalizeStampName(decodeURIComponent(stamp))}
+      subtitle="Cards filtered by stamp variant."
+      count={cards.length}
+    >
+      <VaultCardCollectionList
+        cards={cards}
+        collectionMap={collectionMap}
+        showCollectionControls={!!session?.user?.id}
+        emptyMessage="No cards found for this language and stamp."
+      />
+    </VaultCardListShell>
   );
 }

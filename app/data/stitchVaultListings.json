@@ -1,0 +1,98 @@
+[
+  {
+    "display_order": 1,
+    "expansion_id": "sv3",
+    "number": "125",
+    "variant_id": "f2571ed9-f96b-4822-85d9-f7c1f04aaec9",
+    "variant_name": "playPokemonStampHolofoil",
+    "title": "Charizard Base Set",
+    "condition": "Near Mint",
+    "seller": "PokeKing",
+    "price": "$1,200",
+    "market_trend": "+2.4% this month"
+  },
+  {
+    "display_order": 2,
+    "expansion_id": "svp",
+    "number": "225",
+    "variant_id": "0680c8a7-88b9-4c72-9e57-f71b6135ea76",
+    "variant_name": "winnerStamp",
+    "title": "Mewtwo VSTAR",
+    "condition": "PSA 10",
+    "seller": "EliteVault",
+    "price": "$450",
+    "market_trend": "+1.8% this month"
+  },
+  {
+    "display_order": 3,
+    "expansion_id": "sv9",
+    "number": "167",
+    "variant_id": "9fca392c-04cf-4f29-aece-0ca6d9ec1c99",
+    "variant_name": "expansionStamp",
+    "title": "Rayquaza VMAX",
+    "condition": "Mint",
+    "seller": "SkyHigh",
+    "price": "$890",
+    "market_trend": "+3.1% this month"
+  },
+  {
+    "display_order": 4,
+    "expansion_id": "sv3",
+    "number": "188",
+    "variant_id": "14423f53-3ead-4c2e-8795-0aeb77371092",
+    "variant_name": "regionalChampionshipsStamp",
+    "title": "Pikachu Illustrator",
+    "condition": "Authentic",
+    "seller": "Heritage",
+    "price": "$15,000",
+    "market_trend": "+8.2% this month"
+  },
+  {
+    "display_order": 5,
+    "expansion_id": "sv3",
+    "number": "130",
+    "variant_id": "ab99136e-78d0-40cb-ab0a-387a81d786f8",
+    "variant_name": "gamestopStamp",
+    "title": "Charizard G",
+    "condition": "Excellent",
+    "seller": "FireType",
+    "price": "$950",
+    "market_trend": "+1.2% this month"
+  },
+  {
+    "display_order": 6,
+    "expansion_id": "sv3",
+    "number": "196",
+    "variant_id": "09c3a1e8-f27a-4f49-b28b-81fb506d4c8c",
+    "variant_name": "playPokemonStampHolofoil",
+    "title": "Mew EX",
+    "condition": "Near Mint",
+    "seller": "Psychic",
+    "price": "$320",
+    "market_trend": "+0.9% this month"
+  },
+  {
+    "display_order": 7,
+    "expansion_id": "base1",
+    "number": "101",
+    "variant_id": "2b690c1f-9e44-49c4-900c-0463710c3649",
+    "variant_name": "firstEditionShadowless",
+    "title": "Rayquaza GX",
+    "condition": "PSA 9",
+    "seller": "DragonLair",
+    "price": "$1,100",
+    "market_trend": "+2.7% this month"
+  },
+  {
+    "display_order": 8,
+    "expansion_id": "base1",
+    "number": "102",
+    "variant_id": "c131dc5c-e590-473d-a6e7-f7460f94f6ee",
+    "variant_name": "firstEditionShadowless",
+    "title": "Pikachu VMAX",
+    "condition": "Mint",
+    "seller": "PikaStore",
+    "price": "$2,400",
+    "market_trend": "+4.4% this month"
+  }
+]
