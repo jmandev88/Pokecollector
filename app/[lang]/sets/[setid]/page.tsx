@@ -1,5 +1,12 @@
 import VaultCardCollectionList from "@/app/components/Vault/VaultCardCollectionList";
+import VaultCardListingControls from "@/app/components/Vault/VaultCardListingControls";
 import VaultLanguageSelector from "@/app/components/Vault/VaultLanguageSelector";
+import {
+  CARD_LISTING_PAGE_SIZE,
+  CardListingSearchParams,
+  filterCardsByName,
+  paginateCards,
+} from "@/app/utils/cardListingPagination";
 import Link from "next/link";
 
 import { fetchCardsByExpansion } from "@/db/mcc_cards/mcc_cards.repo";
@@ -34,13 +41,20 @@ function SidebarLink({
 
 export default async function Sets({
   params,
+  searchParams,
 }: {
   params: Promise<{ lang: string; setid: string }>;
+  searchParams: Promise<CardListingSearchParams>;
 }) {
   const { lang, setid } = await params;
+  const resolvedSearchParams = await searchParams;
+  const query = resolvedSearchParams.q ?? "";
+  const page = Math.max(1, Number(resolvedSearchParams.page ?? 1));
 
   const cards = await fetchCardsByExpansion(lang, setid);
   const cardsList = cards ?? [];
+  const filteredCards = filterCardsByName(cardsList, query);
+  const paginatedCards = paginateCards(filteredCards, page);
   const firstCard = cardsList[0];
   const setName = firstCard?.expansion?.name ?? setid;
   const setSeries = firstCard?.expansion?.series ?? "Set checklist";
@@ -148,9 +162,18 @@ export default async function Sets({
             </div>
           </section>
 
-            <VaultCardCollectionList
+          <VaultCardListingControls
+            basePath={`/${lang}/sets/${setid}`}
+            query={query}
+            page={page}
+            totalCount={filteredCards.length}
+            pageSize={CARD_LISTING_PAGE_SIZE}
+          />
+
+          <VaultCardCollectionList
               lang={lang}
-              cards={cardsList}
+              cards={paginatedCards}
+              progressCards={filteredCards}
               collectionMap={collectionMap}
               showCollectionControls={!!session?.user?.id}
             emptyMessage="No cards found for this language and set."

@@ -1,4 +1,5 @@
 import { db } from "../neon";
+import { CARD_STOCK_CONDITIONS, isCardStockCondition } from "@/app/config/cardStock";
 import { normalizeLanguage } from "@/app/utils/language";
 
 const PAGE_SIZE = 20;
@@ -29,6 +30,50 @@ async function ensureCardStockTable() {
     SET last_added_at = updated_at
     WHERE quantity > 0
       AND last_added_at IS NULL
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS mcc_card_stock_lots (
+      variant_id uuid NOT NULL REFERENCES mcc_card_variants(id) ON DELETE CASCADE,
+      condition text NOT NULL,
+      quantity integer NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+      price text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (variant_id, condition)
+    )
+  `);
+
+  await db.query(`
+    ALTER TABLE mcc_card_stock_lots
+    ADD COLUMN IF NOT EXISTS price text
+  `);
+
+  await db.query(`
+    INSERT INTO mcc_card_stock_lots (
+      variant_id,
+      condition,
+      quantity,
+      price,
+      created_at,
+      updated_at
+    )
+    SELECT
+      stock.variant_id,
+      'near_mint',
+      stock.quantity,
+      stock.price,
+      stock.updated_at,
+      stock.updated_at
+    FROM mcc_card_stock stock
+    WHERE stock.quantity > 0
+      AND NOT EXISTS (
+        SELECT 1
+        FROM mcc_card_stock_lots lot
+        WHERE lot.variant_id = stock.variant_id
+      )
+    ON CONFLICT (variant_id, condition)
+    DO NOTHING
   `);
 }
 
@@ -89,12 +134,25 @@ export async function fetchAdminStockCards({
       v.images AS variant_images,
 
       COALESCE(stock.quantity, 0)::int AS stock_quantity,
-      stock.price AS stock_price
+      stock.price AS stock_price,
+      COALESCE(lots.stock_lots, '[]'::jsonb) AS stock_lots
     FROM mcc_card_variants v
     INNER JOIN mcc_cards c
       ON c.id = v.card_id
     LEFT JOIN mcc_card_stock stock
       ON stock.variant_id = v.id
+    LEFT JOIN LATERAL (
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'condition', lot.condition,
+          'quantity', lot.quantity,
+          'price', lot.price
+        )
+        ORDER BY array_position($${values.length + 1}::text[], lot.condition)
+      ) AS stock_lots
+      FROM mcc_card_stock_lots lot
+      WHERE lot.variant_id = v.id
+    ) lots ON true
     WHERE ${whereClause}
     ORDER BY
       c.expansion_sort_order DESC NULLS LAST,
@@ -104,9 +162,9 @@ export async function fetchAdminStockCards({
       c.name,
       v.name
     LIMIT ${PAGE_SIZE}
-    OFFSET $${values.length + 1}
+    OFFSET $${values.length + 2}
     `,
-    [...values, offset]
+    [...values, CARD_STOCK_CONDITIONS.map((condition) => condition.value), offset]
   );
 
   return {
@@ -115,6 +173,111 @@ export async function fetchAdminStockCards({
     page: safePage,
     pageSize: PAGE_SIZE,
   };
+}
+
+async function syncCardStockSummary(variantId: string, promote: boolean) {
+  const result = await db.query(
+    `
+    WITH summary AS (
+      SELECT
+        COALESCE(SUM(quantity), 0)::int AS quantity,
+        (
+          SELECT price
+          FROM mcc_card_stock_lots
+          WHERE variant_id = $1
+            AND quantity > 0
+            AND price IS NOT NULL
+            AND price != ''
+          ORDER BY array_position($2::text[], condition), updated_at DESC
+          LIMIT 1
+        ) AS price
+      FROM mcc_card_stock_lots
+      WHERE variant_id = $1
+    )
+    INSERT INTO mcc_card_stock (
+      variant_id,
+      quantity,
+      price,
+      last_added_at
+    )
+    SELECT
+      $1,
+      summary.quantity,
+      summary.price,
+      CASE WHEN $3::boolean AND summary.quantity > 0 THEN now() END
+    FROM summary
+    ON CONFLICT (variant_id)
+    DO UPDATE
+    SET
+      quantity = EXCLUDED.quantity,
+      price = EXCLUDED.price,
+      last_added_at = CASE
+        WHEN $3::boolean AND EXCLUDED.quantity > 0 THEN now()
+        ELSE mcc_card_stock.last_added_at
+      END,
+      updated_at = now()
+    RETURNING quantity
+    `,
+    [
+      variantId,
+      CARD_STOCK_CONDITIONS.map((condition) => condition.value),
+      promote,
+    ]
+  );
+
+  return Number(result.rows[0]?.quantity ?? 0);
+}
+
+export async function setCardStockLot({
+  variantId,
+  condition,
+  quantity,
+  price,
+}: {
+  variantId: string;
+  condition: string;
+  quantity: number;
+  price: string;
+}) {
+  await ensureCardStockTable();
+
+  if (!isCardStockCondition(condition)) {
+    throw new Error("Invalid stock condition");
+  }
+
+  const safeQuantity = Math.max(0, Math.floor(quantity));
+  const trimmedPrice = price.trim();
+  const previousResult = await db.query(
+    `
+    SELECT quantity
+    FROM mcc_card_stock_lots
+    WHERE variant_id = $1
+      AND condition = $2
+    `,
+    [variantId, condition]
+  );
+  const previousQuantity = Number(previousResult.rows[0]?.quantity ?? 0);
+
+  await db.query(
+    `
+    INSERT INTO mcc_card_stock_lots (
+      variant_id,
+      condition,
+      quantity,
+      price
+    )
+    VALUES ($1, $2, $3, NULLIF($4, ''))
+    ON CONFLICT (variant_id, condition)
+    DO UPDATE
+    SET
+      quantity = EXCLUDED.quantity,
+      price = EXCLUDED.price,
+      updated_at = now()
+    `,
+    [variantId, condition, safeQuantity, trimmedPrice]
+  );
+
+  return syncCardStockSummary(variantId, safeQuantity > previousQuantity);
 }
 
 export async function fetchAdminStockSets(lang: string) {
@@ -261,12 +424,19 @@ export async function fetchVaultStockArrivals(lang: string, limit = 8) {
 
       stock.quantity AS stock_quantity,
       stock.price AS stock_price,
-      stock.last_added_at
+      stock.last_added_at,
+      COALESCE(stock_lots.condition_count, 0)::int AS stock_condition_count
     FROM mcc_card_stock stock
     INNER JOIN mcc_card_variants v
       ON v.id = stock.variant_id
     INNER JOIN mcc_cards c
       ON c.id = v.card_id
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*) AS condition_count
+      FROM mcc_card_stock_lots lot
+      WHERE lot.variant_id = stock.variant_id
+        AND lot.quantity > 0
+    ) stock_lots ON true
     WHERE c.language_code = $1
       AND stock.quantity > 0
       AND stock.last_added_at IS NOT NULL

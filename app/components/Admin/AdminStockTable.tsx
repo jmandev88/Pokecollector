@@ -2,13 +2,8 @@
 
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
-import {
-  decrementCardStock,
-  incrementCardStock,
-  updateCardStock,
-  updateCardStockPrice,
-} from "@/app/actions/adminStock.actions";
+import { updateCardStockLot } from "@/app/actions/adminStock.actions";
+import { CARD_STOCK_CONDITIONS } from "@/app/config/cardStock";
 import { formatVariantName } from "@/app/utils/formatVariantName";
 
 type AdminStockImage = {
@@ -33,6 +28,11 @@ type AdminStockCard = {
   variant_images?: AdminStockImage[];
   stock_quantity: number;
   stock_price?: string | null;
+  stock_lots?: {
+    condition: string;
+    quantity: number;
+    price?: string | null;
+  }[];
 };
 
 function imageFor(card: AdminStockCard) {
@@ -54,165 +54,112 @@ export default function AdminStockTable({
   const searchParams = useSearchParams();
   const search = searchParams.toString();
   const currentPath = search ? `${pathname}?${search}` : pathname;
-  const initialQuantities = useMemo(
-    () =>
-      Object.fromEntries(
-        cards.map((card) => [card.variant_id, Number(card.stock_quantity ?? 0)])
-      ),
-    [cards]
-  );
-  const [quantities, setQuantities] = useState(initialQuantities);
-  const [isPending, startTransition] = useTransition();
-
-  const adjust = (variantId: string, delta: number) => {
-    const previous = quantities[variantId] ?? 0;
-    const next = Math.max(previous + delta, 0);
-
-    setQuantities((current) => ({
-      ...current,
-      [variantId]: next,
-    }));
-
-    startTransition(async () => {
-      try {
-        if (delta > 0) {
-          await incrementCardStock(variantId, currentPath);
-        } else {
-          await decrementCardStock(variantId, currentPath);
-        }
-      } catch {
-        setQuantities((current) => ({
-          ...current,
-          [variantId]: previous,
-        }));
-      }
-    });
-  };
 
   return (
     <div className="mt-6 overflow-hidden rounded-xl border border-[#f3dfdb] bg-white/70 shadow-sm">
-      <div className="grid grid-cols-[72px_1fr_180px] gap-4 border-b border-[#f3dfdb] bg-[#fff0ed] px-4 py-3 text-[10px] font-black uppercase text-[#9b7068] md:grid-cols-[72px_1fr_120px_200px_220px]">
+      <div className="grid grid-cols-[72px_1fr] gap-4 border-b border-[#f3dfdb] bg-[#fff0ed] px-4 py-3 text-[10px] font-black uppercase text-[#9b7068] md:grid-cols-[72px_1fr_120px_1.7fr]">
         <div>Image</div>
         <div>Card</div>
         <div className="hidden md:block">Set</div>
-        <div className="hidden md:block">Price</div>
-        <div>Stock</div>
+        <div className="hidden md:block">Conditioned Stock</div>
       </div>
 
-      {cards.map((card) => (
-        <div
-          key={card.variant_id}
-          className="grid grid-cols-[72px_1fr_180px] gap-4 border-b border-[#f3dfdb] px-4 py-4 last:border-b-0 md:grid-cols-[72px_1fr_120px_200px_220px]"
-        >
-          <div className="flex h-20 items-center justify-center rounded-lg bg-[#fff0ed] p-1 ring-1 ring-[#f3dfdb]">
-            <Image
-              src={imageFor(card)}
-              alt={card.card_name}
-              width={56}
-              height={78}
-              className="max-h-[72px] w-full object-contain"
-            />
-          </div>
+      {cards.map((card) => {
+        const lotsByCondition = Object.fromEntries(
+          (card.stock_lots ?? []).map((lot) => [lot.condition, lot])
+        );
 
-          <div className="min-w-0">
-            <div className="text-sm font-black text-[#2c1715]">
-              {card.card_name}
-            </div>
-            <div className="mt-1 text-xs font-semibold text-[#755652]">
-              #{card.number ?? "N/A"} • {card.rarity ?? "Unknown"}
-            </div>
-            <div className="mt-1 truncate text-[11px] font-semibold text-[#9b7068]">
-              {formatVariantName(card.variant_name ?? "") || "Default Variant"}
-            </div>
-            <div className="mt-1 text-[10px] font-semibold text-[#9b7068] md:hidden">
-              {card.expansion?.name ?? card.expansion_id}
-            </div>
-          </div>
-
-          <div className="hidden text-xs font-semibold text-[#704f49] md:block">
-            <div>{card.expansion?.name ?? card.expansion_id}</div>
-            <div className="mt-1 text-[10px] text-[#9b7068]">
-              {card.expansion_id}
-            </div>
-          </div>
-
-          <form action={updateCardStockPrice} className="hidden space-y-2 md:block">
-            <input type="hidden" name="variantId" value={card.variant_id} />
-            <input type="hidden" name="path" value={currentPath} />
-            <input
-              name="price"
-              type="text"
-              defaultValue={card.stock_price ?? ""}
-              placeholder="£0.00"
-              className="h-9 w-full rounded-md border border-[#efcbc4] bg-white px-3 text-xs font-semibold text-[#2c1715] outline-none focus:border-[#cf160f]"
-            />
-            <button className="h-8 rounded-md bg-[#704f49] px-3 text-[10px] font-black uppercase text-white">
-              Save Price
-            </button>
-          </form>
-
-          <div className="space-y-2">
-            <form action={updateCardStockPrice} className="space-y-2 md:hidden">
-              <input type="hidden" name="variantId" value={card.variant_id} />
-              <input type="hidden" name="path" value={currentPath} />
-              <input
-                name="price"
-                type="text"
-                defaultValue={card.stock_price ?? ""}
-                placeholder="£0.00"
-                className="h-8 w-full rounded-md border border-[#efcbc4] bg-white px-2 text-xs font-semibold text-[#2c1715] outline-none focus:border-[#cf160f]"
+        return (
+          <div
+            key={card.variant_id}
+            className="grid grid-cols-[72px_1fr] gap-4 border-b border-[#f3dfdb] px-4 py-4 last:border-b-0 md:grid-cols-[72px_1fr_120px_1.7fr]"
+          >
+            <div className="flex h-20 items-center justify-center rounded-lg bg-[#fff0ed] p-1 ring-1 ring-[#f3dfdb]">
+              <Image
+                src={imageFor(card)}
+                alt={card.card_name}
+                width={56}
+                height={78}
+                className="max-h-[72px] w-full object-contain"
               />
-              <button className="h-8 rounded-md bg-[#704f49] px-3 text-[10px] font-black uppercase text-white">
-                Save Price
-              </button>
-            </form>
+            </div>
 
-            <div className="flex overflow-hidden rounded-lg border border-[#efcbc4] bg-white">
-              <button
-                disabled={isPending || (quantities[card.variant_id] ?? 0) <= 0}
-                onClick={() => adjust(card.variant_id, -1)}
-                className="h-9 w-10 cursor-pointer bg-[#fff2ef] font-black text-[#cf160f] disabled:cursor-not-allowed disabled:opacity-35"
-              >
-                -
-              </button>
-              <div className="flex h-9 min-w-12 flex-1 items-center justify-center px-3 text-sm font-black">
-                {quantities[card.variant_id] ?? 0}
+            <div className="min-w-0">
+              <div className="text-sm font-black text-[#2c1715]">
+                {card.card_name}
               </div>
-              <button
-                disabled={isPending}
-                onClick={() => adjust(card.variant_id, 1)}
-                className="h-9 w-10 cursor-pointer bg-[#cf160f] font-black text-white disabled:opacity-60"
-              >
-                +
-              </button>
+              <div className="mt-1 text-xs font-semibold text-[#755652]">
+                #{card.number ?? "N/A"} • {card.rarity ?? "Unknown"}
+              </div>
+              <div className="mt-1 truncate text-[11px] font-semibold text-[#9b7068]">
+                {formatVariantName(card.variant_name ?? "") ||
+                  "Default Variant"}
+              </div>
+              <div className="mt-1 text-[10px] font-semibold text-[#9b7068] md:hidden">
+                {card.expansion?.name ?? card.expansion_id}
+              </div>
+              <div className="mt-2 inline-flex rounded-full bg-[#fff0ed] px-3 py-1 text-[10px] font-black uppercase text-[#704f49] ring-1 ring-[#f3dfdb]">
+                Total {Number(card.stock_quantity ?? 0).toLocaleString("en-GB")}
+              </div>
             </div>
 
-            <form action={updateCardStock} className="flex gap-2">
-              <input type="hidden" name="variantId" value={card.variant_id} />
-              <input type="hidden" name="path" value={currentPath} />
-              <input
-                name="quantity"
-                type="number"
-                min="0"
-                value={quantities[card.variant_id] ?? 0}
-                onChange={(event) =>
-                  setQuantities((current) => ({
-                    ...current,
-                    [card.variant_id]: Math.max(
-                      0,
-                      Number(event.target.value || 0)
-                    ),
-                  }))
-                }
-                className="h-8 min-w-0 flex-1 rounded-md border border-[#efcbc4] bg-white px-2 text-xs font-semibold text-[#2c1715]"
-              />
-              <button className="h-8 rounded-md bg-[#704f49] px-3 text-[10px] font-black uppercase text-white">
-                Set
-              </button>
-            </form>
+            <div className="hidden text-xs font-semibold text-[#704f49] md:block">
+              <div>{card.expansion?.name ?? card.expansion_id}</div>
+              <div className="mt-1 text-[10px] text-[#9b7068]">
+                {card.expansion_id}
+              </div>
+            </div>
+
+            <div className="col-span-2 rounded-xl border border-[#f3dfdb] bg-[#fff8f6] p-3 md:col-span-1">
+              <div className="grid gap-2">
+                {CARD_STOCK_CONDITIONS.map((condition) => {
+                  const lot = lotsByCondition[condition.value];
+
+                  return (
+                    <form
+                      action={updateCardStockLot}
+                      key={condition.value}
+                      className="grid grid-cols-[1fr_72px_92px_auto] items-center gap-2"
+                    >
+                      <input
+                        type="hidden"
+                        name="variantId"
+                        value={card.variant_id}
+                      />
+                      <input type="hidden" name="path" value={currentPath} />
+                      <input
+                        type="hidden"
+                        name="condition"
+                        value={condition.value}
+                      />
+                      <div className="truncate text-[10px] font-black uppercase text-[#704f49]">
+                        {condition.label}
+                      </div>
+                      <input
+                        name="quantity"
+                        type="number"
+                        min="0"
+                        defaultValue={Number(lot?.quantity ?? 0)}
+                        className="h-8 min-w-0 rounded-md border border-[#efcbc4] bg-white px-2 text-xs font-semibold text-[#2c1715] outline-none focus:border-[#cf160f]"
+                      />
+                      <input
+                        name="price"
+                        type="text"
+                        defaultValue={lot?.price ?? ""}
+                        placeholder="£0.00"
+                        className="h-8 min-w-0 rounded-md border border-[#efcbc4] bg-white px-2 text-xs font-semibold text-[#2c1715] outline-none focus:border-[#cf160f]"
+                      />
+                      <button className="h-8 rounded-md bg-[#704f49] px-3 text-[10px] font-black uppercase text-white">
+                        Save
+                      </button>
+                    </form>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

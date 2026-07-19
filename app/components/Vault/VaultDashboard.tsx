@@ -53,6 +53,8 @@ type VaultCard = {
   variant_name?: string | null;
   variant_images?: VaultImage[];
   variant_prices?: unknown;
+  stock_quantity?: number | string | null;
+  stock_condition_count?: number | string | null;
 };
 
 type VaultDashboardProps = {
@@ -72,6 +74,25 @@ type VaultDashboardProps = {
 
 function priceFor(card: VaultCard) {
   return card.listing_price ?? "Price pending";
+}
+
+function stockNoticeFor(card: VaultCard) {
+  const quantity = Number(card.stock_quantity ?? 0);
+  const conditionCount = Number(card.stock_condition_count ?? 0);
+
+  if (quantity <= 0) {
+    return null;
+  }
+
+  if (conditionCount > 1) {
+    return `${quantity} in stock · ${conditionCount} conditions`;
+  }
+
+  if (conditionCount === 1) {
+    return `${quantity} in stock · 1 condition`;
+  }
+
+  return `${quantity} in stock`;
 }
 
 function SidebarLink({
@@ -308,6 +329,7 @@ export default function VaultDashboard({
                 showCollectionControls={!!session?.user?.id}
                 variant="vault"
                 marketPrice={priceFor(card)}
+                stockNotice={stockNoticeFor(card)}
                 onSelect={() => setSelectedCard(card)}
                 onQuantityChange={handleQuantityChange}
               />

@@ -29,6 +29,7 @@ type CardTileProps = {
   showCollectionControls?: boolean;
   variant?: "default" | "vault";
   marketPrice?: string | null;
+  stockNotice?: string | null;
   onSelect?: () => void;
   onQuantityChange?: (variantId: string, quantity: number) => void;
 };
@@ -39,6 +40,7 @@ export default function CardTile({
   showCollectionControls = true,
   variant = "default",
   marketPrice,
+  stockNotice,
   onSelect,
   onQuantityChange,
 }: CardTileProps) {
@@ -148,6 +150,12 @@ export default function CardTile({
               )
             )}
           </div>
+
+          {stockNotice && (
+            <div className="mt-2 rounded-md bg-[#fff0ed] px-2 py-1.5 text-[10px] font-black uppercase text-[#cf160f] ring-1 ring-[#f3dfdb]">
+              {stockNotice}
+            </div>
+          )}
         </div>
       </div>
     </div>

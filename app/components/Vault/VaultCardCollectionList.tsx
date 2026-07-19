@@ -104,12 +104,14 @@ function ProgressBar({
 export default function VaultCardCollectionList({
   lang,
   cards,
+  progressCards = cards,
   collectionMap,
   showCollectionControls,
   emptyMessage,
 }: {
   lang: string;
   cards: VaultListCard[];
+  progressCards?: VaultListCard[];
   collectionMap: Record<string, number>;
   showCollectionControls: boolean;
   emptyMessage: string;
@@ -119,12 +121,12 @@ export default function VaultCardCollectionList({
   const [isPending, startTransition] = useTransition();
 
   const progress = useMemo(() => {
-    const cardKeys = new Set(cards.map(standardCardKey));
-    const variantIds = new Set(cards.map((card) => card.variant_id));
+    const cardKeys = new Set(progressCards.map(standardCardKey));
+    const variantIds = new Set(progressCards.map((card) => card.variant_id));
     const ownedCardKeys = new Set<string>();
     const ownedVariantIds = new Set<string>();
 
-    cards.forEach((card) => {
+    progressCards.forEach((card) => {
       if ((quantities[card.variant_id] ?? 0) > 0) {
         ownedCardKeys.add(standardCardKey(card));
         ownedVariantIds.add(card.variant_id);
@@ -137,7 +139,7 @@ export default function VaultCardCollectionList({
       masterOwned: ownedVariantIds.size,
       masterTotal: variantIds.size,
     };
-  }, [cards, quantities]);
+  }, [progressCards, quantities]);
 
   const handleQuantityChange = (variantId: string, quantity: number) => {
     setQuantities((current) => {
