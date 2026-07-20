@@ -204,6 +204,10 @@ export default function VaultDashboard({
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [hasLoadedCartSession, setHasLoadedCartSession] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [basketNotice, setBasketNotice] = useState<{
+    message: string;
+    id: number;
+  } | null>(null);
   const [localQuantities, setLocalQuantities] = useState(() =>
     Object.fromEntries(
       ownedVariants.map((variant) => [variant.variantId, variant.quantity])
@@ -213,8 +217,12 @@ export default function VaultDashboard({
   const featuredCards = cards.slice(0, 8);
 
   useEffect(() => {
-    setCartItems(readSessionCartItems());
-    setHasLoadedCartSession(true);
+    const timeout = window.setTimeout(() => {
+      setCartItems(readSessionCartItems());
+      setHasLoadedCartSession(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, []);
 
   useEffect(() => {
@@ -227,6 +235,16 @@ export default function VaultDashboard({
       JSON.stringify(cartItems)
     );
   }, [cartItems, hasLoadedCartSession]);
+
+  useEffect(() => {
+    if (!basketNotice) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setBasketNotice(null), 3500);
+
+    return () => window.clearTimeout(timeout);
+  }, [basketNotice]);
 
   const selectedQuantity = useMemo(
     () => (selectedCard ? localQuantities[selectedCard.variant_id] ?? 0 : 0),
@@ -324,20 +342,20 @@ export default function VaultDashboard({
     });
     const maxQuantity = Number(lot.quantity ?? 0);
 
-    setCartItems((current) => {
-      const existingItem = current.find((item) => item.key === key);
-      const currentQuantity = existingItem?.quantity ?? 0;
-      const quantityToAdd = Math.min(
-        Math.max(quantity, 0),
-        Math.max(maxQuantity - currentQuantity, 0)
-      );
+    const existingItem = cartItems.find((item) => item.key === key);
+    const currentQuantity = existingItem?.quantity ?? 0;
+    const quantityToAdd = Math.min(
+      Math.max(quantity, 0),
+      Math.max(maxQuantity - currentQuantity, 0)
+    );
 
-      if (quantityToAdd <= 0) {
-        return current;
-      }
+    if (quantityToAdd <= 0) {
+      return;
+    }
 
-      if (existingItem) {
-        return current.map((item) =>
+    if (existingItem) {
+      setCartItems((current) =>
+        current.map((item) =>
           item.key === key
             ? {
                 ...item,
@@ -345,10 +363,10 @@ export default function VaultDashboard({
                 maxQuantity,
               }
             : item
-        );
-      }
-
-      return [
+        )
+      );
+    } else {
+      setCartItems((current) => [
         ...current,
         {
           key,
@@ -359,8 +377,14 @@ export default function VaultDashboard({
           quantity: quantityToAdd,
           maxQuantity,
         },
-      ];
+      ]);
+    }
+
+    setBasketNotice({
+      message: `${quantityToAdd} × ${title} added to your basket`,
+      id: Date.now(),
     });
+
     if (openCart) {
       setIsCartOpen(true);
     }
@@ -548,11 +572,14 @@ export default function VaultDashboard({
                   images: card.images,
                 }}
                 quantity={localQuantities[card.variant_id] ?? 0}
-                showCollectionControls={false}
+                showCollectionControls
                 variant="vault"
                 marketPrice={priceFor(card)}
                 stockNotice={stockNoticeFor(card)}
+                canUpdateCollection={!!session?.user?.id}
+                onAuthRequired={() => signIn("google")}
                 onSelect={() => setSelectedCard(card)}
+                onQuantityChange={handleQuantityChange}
               />
             ))}
           </section>
@@ -680,6 +707,27 @@ export default function VaultDashboard({
               </button>
             </div>
           </aside>
+        </div>
+      )}
+
+      {basketNotice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-5 right-5 z-[60] flex max-w-[calc(100vw-2.5rem)] items-center gap-3 rounded-xl border border-[#b8d0ec] bg-[#2463a8] px-4 py-3 text-sm font-bold text-white shadow-2xl sm:max-w-sm"
+        >
+          <span className="material-symbols-outlined text-[20px]">
+            check_circle
+          </span>
+          <span>{basketNotice.message}</span>
+          <button
+            type="button"
+            onClick={() => setBasketNotice(null)}
+            className="ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/80 transition hover:bg-white/15 hover:text-white"
+            aria-label="Dismiss basket notification"
+          >
+            <span className="material-symbols-outlined text-[17px]">close</span>
+          </button>
         </div>
       )}
     </div>

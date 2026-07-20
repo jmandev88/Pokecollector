@@ -30,7 +30,9 @@ type CardTileProps = {
   variant?: "default" | "vault";
   marketPrice?: string | null;
   stockNotice?: string | null;
+  canUpdateCollection?: boolean;
   onSelect?: () => void;
+  onAuthRequired?: () => void;
   onQuantityChange?: (variantId: string, quantity: number) => void;
 };
 
@@ -41,7 +43,9 @@ export default function CardTile({
   variant = "default",
   marketPrice,
   stockNotice,
+  canUpdateCollection = true,
   onSelect,
+  onAuthRequired,
   onQuantityChange,
 }: CardTileProps) {
   const image =
@@ -115,6 +119,8 @@ export default function CardTile({
               variantId={card.variant_id}
               quantity={quantity}
               variant={variant}
+              canUpdate={canUpdateCollection}
+              onAuthRequired={onAuthRequired}
               onQuantityChange={(nextQuantity) =>
                 onQuantityChange?.(card.variant_id, nextQuantity)
               }
